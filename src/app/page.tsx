@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import SearchInput from '@/components/Search/SearchInput'
 import PaperList from '@/components/Search/PaperList'
 import { PaperMetadata, ProcessedPaper } from '@/lib/types'
+import { SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/nextjs'
 
 type SearchStatus = 'idle' | 'searching' | 'results' | 'processing'
 
@@ -114,8 +115,29 @@ export default function HomePage() {
 
   const anyComplete = selectedIds.some(id => processingStatus[id] === 'complete')
 
+  const clerkEnabled = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0a0e14', backgroundImage: "url('/grid-texture.svg')" }}>
+      {/* Auth section */}
+      {clerkEnabled && (
+        <div className="absolute top-4 right-6 z-10 flex items-center gap-2">
+          <SignedOut>
+            <SignInButton mode="modal">
+              <button
+                className="px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ backgroundColor: '#00d4aa', color: '#0a0e14' }}
+              >
+                Sign in
+              </button>
+            </SignInButton>
+          </SignedOut>
+          <SignedIn>
+            <UserButton appearance={{ variables: { colorPrimary: '#00d4aa' } }} />
+          </SignedIn>
+        </div>
+      )}
+
       {/* Hero */}
       <div className="max-w-4xl mx-auto px-6 py-20">
         {/* Header */}

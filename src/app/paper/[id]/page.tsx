@@ -16,6 +16,7 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useDepthMeter } from '@/hooks/useDepthMeter'
 import { useRabbitHole } from '@/hooks/useRabbitHole'
 import demoData from '@/data/demo-fallback.json'
+import { SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/nextjs'
 
 export default function PaperPage() {
   const params = useParams()
@@ -277,13 +278,32 @@ export default function PaperPage() {
       {/* Main Content */}
       <main className="max-w-3xl mx-auto px-6 py-12">
         {/* Back button */}
-        <button
-          onClick={() => router.push('/')}
-          className="mb-6 flex items-center gap-2 text-sm transition-all"
-          style={{ color: '#9ca3af' }}
-        >
-          ← Back to search
-        </button>
+        <div className="mb-6 flex items-center justify-between">
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 text-sm transition-all"
+            style={{ color: '#9ca3af' }}
+          >
+            ← Back to search
+          </button>
+          {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && (
+            <div className="flex items-center gap-2">
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                    style={{ backgroundColor: '#00d4aa', color: '#0a0e14' }}
+                  >
+                    Sign in
+                  </button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <UserButton appearance={{ variables: { colorPrimary: '#00d4aa' } }} />
+              </SignedIn>
+            </div>
+          )}
+        </div>
 
         <HeaderZone
           paper={paper}
