@@ -56,15 +56,37 @@ To use real functionality, fill in the keys as described below.
 2. Create an account and generate an API key
 3. Set `DAYTONA_API_KEY=...` in `.env.local`
 
+#### Daytona API URL
+1. Set `DAYTONA_API_URL=https://app.daytona.io/api` in `.env.local`
+2. If you are self-hosting Daytona, use your own URL instead
+
 #### Convex (real-time data layer)
 1. Install the Convex CLI: `npm install -g convex`
 2. Run `npx convex dev` in the project root — it will prompt you to log in and create a deployment
 3. Copy the `NEXT_PUBLIC_CONVEX_URL` it prints into your `.env.local`
 
+#### Convex Deploy Key (needed for production deploys)
+1. Go to your [Convex dashboard](https://dashboard.convex.dev)
+2. Navigate to your project → **Settings → Deploy Keys**
+3. Generate a key and set `CONVEX_DEPLOY_KEY=...` in `.env.local`
+
 #### Clerk (authentication — optional for local dev)
 1. Go to [clerk.com](https://clerk.com) and create an application
 2. Copy the publishable and secret keys into `.env.local`
 3. If you skip this, authentication features are disabled but core reading still works
+
+#### MongoDB Atlas (data persistence)
+1. Go to [cloud.mongodb.com](https://cloud.mongodb.com) and create a free cluster
+2. Click **Connect → Drivers** to get the connection string
+3. Set `MONGODB_URI=mongodb+srv://...` in `.env.local`
+
+#### Supermemory (memory layer)
+1. Go to the Supermemory dashboard and create an account
+2. Generate an API key and set `SUPERMEMORY_API_KEY=...` in `.env.local`
+
+#### Laminar (observability)
+1. Go to the Laminar observability dashboard and create an account
+2. Generate an API key and set `LAMINAR_API_KEY=...` in `.env.local`
 
 ### 5. Run the Development Server
 
@@ -115,12 +137,94 @@ MathJax loads from a CDN (`cdn.jsdelivr.net`). Check your internet connection. T
 
 ## Deployment (Vercel)
 
-1. Push your branch to GitHub
-2. Go to [vercel.com](https://vercel.com) and import the repository
-3. Add all environment variables from `.env.local` in the Vercel project settings
-4. Deploy — Vercel auto-detects Next.js and configures the build
+### Prerequisites
+- A Vercel account at [vercel.com](https://vercel.com)
+- **Vercel Pro plan** — required because the API routes use extended serverless function timeouts:
+  - `/api/search` uses `maxDuration = 60` (Browser Use needs time to traverse multiple sources)
+  - `/api/process` uses `maxDuration = 120` (PDF extraction + Claude processing)
+  - The Vercel Hobby plan limits serverless functions to 10 seconds, which is not enough
 
-**Important:** Set `NEXT_PUBLIC_CONVEX_URL` to your production Convex deployment URL (run `npx convex deploy` to get it).
+### Import and Configure
+
+1. Push your code to GitHub (if not already)
+2. Go to [vercel.com/new](https://vercel.com/new) and import the `YCBU-3-2026` repository
+3. Vercel auto-detects Next.js — the defaults are correct:
+   - **Framework Preset:** Next.js
+   - **Build Command:** `next build`
+   - **Output Directory:** `.next`
+   - **Node.js Version:** 18.x or 20.x
+
+### Environment Variables
+
+Add **all** environment variables in **Vercel Dashboard → Project Settings → Environment Variables**.
+
+Copy every key from your `.env.local` into Vercel. Critical notes:
+
+| Variable | Notes |
+|---|---|
+| `NEXT_PUBLIC_CONVEX_URL` | Must be your **production** Convex URL (see below), not the dev URL |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Same key works for dev and prod |
+| `CLERK_SECRET_KEY` | Same key works for dev and prod |
+| `ANTHROPIC_API_KEY` | Same key for all environments |
+| `BROWSER_USE_API_KEY` | Same key for all environments |
+| `DAYTONA_API_KEY` | Same key for all environments |
+| `DAYTONA_API_URL` | `https://app.daytona.io/api` |
+| `MONGODB_URI` | Your production MongoDB Atlas connection string |
+| `SUPERMEMORY_API_KEY` | Same key for all environments |
+| `LAMINAR_API_KEY` | Same key for all environments |
+| `CONVEX_DEPLOY_KEY` | From Convex dashboard — needed for production schema pushes |
+
+### Convex Production Deployment
+
+Local development uses `npx convex dev` which creates a **development** deployment. For production:
+
+1. Run `npx convex deploy` — this pushes your schema and functions to a **production** Convex deployment
+2. Copy the production URL it outputs (looks like `https://your-app-name.convex.cloud`)
+3. Set this as `NEXT_PUBLIC_CONVEX_URL` in your Vercel environment variables
+4. Set `CONVEX_DEPLOY_KEY` in Vercel env vars — this allows CI/CD to push schema changes automatically
+
+**Important:** `npx convex dev` and `npx convex deploy` target different deployments. Make sure Vercel points to the production one.
+
+### Clerk Domain Configuration
+
+After your first Vercel deploy:
+
+1. Go to [dashboard.clerk.com](https://dashboard.clerk.com) → your application
+2. Navigate to **Paths** or **Redirect URLs**
+3. Add your Vercel production domain (e.g., `https://your-app.vercel.app`) to the allowed redirect URLs
+4. If using a custom domain, add that too
+5. If using Clerk webhooks, update the webhook endpoint URL to your production domain
+
+### Deploy
+
+1. Click **Deploy** in Vercel (or push to your main branch if auto-deploy is enabled)
+2. Wait for the build to complete (~1-2 minutes)
+
+### Post-Deploy Verification
+
+After deployment, verify everything works:
+
+1. **Visit your deployed URL** — the landing page should load with the search input
+2. **Try the demo query** — search for "mechanistic interpretability" to test the demo fallback data
+3. **Check Vercel Function Logs** — go to Vercel Dashboard → Deployments → Functions tab. Look for any errors about missing environment variables
+4. **Check Convex Dashboard** — verify your production deployment is receiving data
+5. **Test a real search** (if Browser Use key is set) — try a non-demo query and confirm results come back
+
+### Custom Domain (Optional)
+
+1. Go to Vercel Dashboard → Project Settings → Domains
+2. Add your custom domain and follow the DNS configuration instructions
+3. Update Clerk redirect URLs to include the custom domain
+
+### Troubleshooting Deployment Issues
+
+| Issue | Fix |
+|---|---|
+| Functions timing out on Hobby plan | Upgrade to Vercel Pro — the search and process routes need >10s |
+| "NEXT_PUBLIC_CONVEX_URL not configured" | Make sure you ran `npx convex deploy` and set the production URL |
+| Clerk sign-in redirects to localhost | Add your Vercel domain to Clerk's allowed redirect URLs |
+| Convex schema mismatch | Run `npx convex deploy` again to push latest schema to production |
+| Build fails with missing dependencies | Run `npm install` locally first, ensure `package-lock.json` is committed |
 
 ---
 
