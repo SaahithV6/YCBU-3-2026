@@ -69,10 +69,10 @@ export default function CitationGraph({ citations, paperTitle, onCitationClick, 
           .selectAll('g')
           .data(nodes)
           .join('g')
-          .attr('cursor', 'pointer')
+          .attr('cursor', 'pointer') as d3.Selection<SVGGElement, NodeDatum & d3.SimulationNodeDatum, SVGGElement, unknown>
 
         nodeSelection.call(
-          d3.drag<SVGGElement, d3.SimulationNodeDatum>()
+          d3.drag<SVGGElement, NodeDatum & d3.SimulationNodeDatum>()
             .on('start', (event, d) => {
               if (!event.active) simulation.alphaTarget(0.3).restart()
               d.fx = d.x
@@ -86,7 +86,7 @@ export default function CitationGraph({ citations, paperTitle, onCitationClick, 
               if (!event.active) simulation.alphaTarget(0)
               d.fx = null
               d.fy = null
-            }) as unknown as (selection: typeof nodeSelection) => void
+            })
         )
 
         const node = nodeSelection

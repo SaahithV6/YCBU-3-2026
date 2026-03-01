@@ -33,8 +33,14 @@ export default function NotebookCell({ cell, onRun }: NotebookCellProps) {
         <div
           className="text-sm leading-relaxed prose prose-invert max-w-none"
           style={{ color: '#e8e0d0', fontFamily: 'IBM Plex Serif, serif' }}
-          dangerouslySetInnerHTML={{ __html: cell.content.replace(/\n/g, '<br/>').replace(/^# (.+)$/m, '<h3 style="color: #e8e0d0; font-family: Syne; font-size: 1rem; margin-bottom: 0.5rem">$1</h3>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') }}
-        />
+        >
+          {cell.content.split('\n').map((line, i) => {
+            if (line.startsWith('# ')) {
+              return <h3 key={i} style={{ color: '#e8e0d0', fontFamily: 'Syne', fontSize: '1rem', marginBottom: '0.5rem' }}>{line.slice(2)}</h3>
+            }
+            return <span key={i}>{line}<br /></span>
+          })}
+        </div>
       </div>
     )
   }
