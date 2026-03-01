@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { safeEncodeId } from '@/lib/urlUtils'
 
 interface SavedPaper {
   id: string
@@ -34,7 +35,7 @@ export default function SavedPapersPage() {
     setDeletingId(id)
     setDeleteError(null)
     try {
-      const res = await fetch(`/api/papers/${encodeURIComponent(id)}/pdf`, { method: 'DELETE' })
+      const res = await fetch(`/api/papers/${safeEncodeId(id)}/pdf`, { method: 'DELETE' })
       if (res.ok) {
         setPapers((prev) => prev.filter((p) => p.id !== id))
       } else {
@@ -127,7 +128,7 @@ export default function SavedPapersPage() {
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <a
-                    href={`/api/papers/${encodeURIComponent(paper.id)}/pdf`}
+                    href={`/api/papers/${safeEncodeId(paper.id)}/pdf`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs px-3 py-1.5 rounded bg-teal text-background"
@@ -135,7 +136,7 @@ export default function SavedPapersPage() {
                     View PDF ↗
                   </a>
                   <button
-                    onClick={() => router.push(`/paper/${encodeURIComponent(paper.id)}`)}
+                    onClick={() => router.push(`/paper/${safeEncodeId(paper.id)}`)}
                     className="text-xs px-3 py-1.5 rounded border border-surface-2 text-text-muted bg-background"
                   >
                     Open Paper

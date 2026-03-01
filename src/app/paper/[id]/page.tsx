@@ -20,6 +20,7 @@ import demoData from '@/data/demo-fallback.json'
 import { SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/nextjs'
 import type { ArticleAnalysis } from '@/app/api/analyze-articles/route'
 import type { DiscoveredArticle } from '@/app/api/browser-use/route'
+import { safeEncodeId } from '@/lib/urlUtils'
 
 interface SupermemoryResult {
   content: string
@@ -233,7 +234,7 @@ export default function PaperPage() {
     if (!paper) return
     const id = params.id as string
     if (!id) return
-    fetch(`/api/papers/${encodeURIComponent(id)}/pdf`, { method: 'HEAD' })
+    fetch(`/api/papers/${safeEncodeId(id)}/pdf`, { method: 'HEAD' })
       .then((res) => {
         if (res.ok) setPdfFileId(id)
       })
@@ -485,7 +486,7 @@ export default function PaperPage() {
           </button>
           {pdfFileId ? (
             <a
-              href={`/api/papers/${encodeURIComponent(params.id as string)}/pdf`}
+              href={`/api/papers/${safeEncodeId(params.id as string)}/pdf`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all bg-surface text-teal border border-teal/30"

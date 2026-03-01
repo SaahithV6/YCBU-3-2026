@@ -107,7 +107,9 @@ Return ONLY valid JSON array. No other text.`
     })
 
     if (!createResponse.ok) {
-      console.warn(`Browser Use API error: ${createResponse.status}`)
+      let body = ''
+      try { body = await createResponse.text() } catch { /* ignore */ }
+      console.warn(`Browser Use API error: ${createResponse.status} ${createResponse.statusText}${body ? ` — ${body}` : ''}`)
       return []
     }
 
