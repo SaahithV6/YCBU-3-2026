@@ -1,4 +1,4 @@
-# Getting Started with Living Papers v2
+# Getting Started with Combo Papers
 
 This guide gets you from zero to a running app in under 10 minutes.
 

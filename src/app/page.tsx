@@ -153,8 +153,7 @@ export default function HomePage() {
             className="text-5xl md:text-6xl font-bold mb-4 leading-tight"
             style={{ color: '#e8e0d0', fontFamily: 'Syne, sans-serif' }}
           >
-            Living Papers
-            <span style={{ color: '#00d4aa' }}> v2</span>
+            Combo Papers
           </h1>
 
           <p
@@ -204,6 +203,10 @@ export default function HomePage() {
             <div className="text-2xl mb-3 animate-spin inline-block">⟳</div>
             <p style={{ color: '#9ca3af' }}>Searching research databases...</p>
             <p className="text-xs mt-1" style={{ color: '#9ca3af' }}>Scanning arXiv, Semantic Scholar, PubMed</p>
+            <div className="inline-flex items-center gap-1.5 mt-3 text-xs" style={{ color: '#00d4aa' }}>
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" style={{ backgroundColor: '#00d4aa' }} />
+              Browser agent active
+            </div>
           </div>
         )}
 
@@ -241,6 +244,13 @@ export default function HomePage() {
                 }
               </button>
             </div>
+
+            {status === 'processing' && (
+              <div className="inline-flex items-center gap-1.5 mb-4 text-xs" style={{ color: '#00d4aa' }}>
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" style={{ backgroundColor: '#00d4aa' }} />
+                Browser agent active
+              </div>
+            )}
 
             <PaperList
               papers={papers}

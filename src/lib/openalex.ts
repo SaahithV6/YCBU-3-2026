@@ -38,7 +38,7 @@ export async function searchOpenAlex(query: string, limit = 10): Promise<PaperMe
 
   try {
     const response = await fetch(url, {
-      headers: { 'User-Agent': 'LivingPapersV2/1.0 (mailto:app@livingpapers.io)' },
+      headers: { 'User-Agent': 'ComboPapers/1.0 (mailto:app@livingpapers.io)' },
     })
 
     if (!response.ok) {

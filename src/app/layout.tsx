@@ -4,7 +4,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import ConvexClientProvider from '@/components/ConvexProvider'
 
 export const metadata: Metadata = {
-  title: 'Living Papers v2',
+  title: 'Combo Papers',
   description: 'Web agent-powered research intelligence platform',
   icons: { icon: '/favicon.svg' },
 }
