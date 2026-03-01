@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Section, Variable, Equation, ReadingMode, EvidenceChain as EvidenceChainType } from '@/lib/types'
+import { Section, Variable, Equation, ReadingMode, EvidenceChain as EvidenceChainType, Figure } from '@/lib/types'
 import EquationRenderer from './EquationRenderer'
 import FigureViewer from './FigureViewer'
 import DontUnderstandButton from './DontUnderstandButton'
@@ -13,6 +13,7 @@ interface SectionRendererProps {
   section: Section
   variables: Variable[]
   equations?: Equation[]
+  figures?: Figure[]
   paperTitle: string
   readingMode: ReadingMode
   onEquationExpand?: () => void
@@ -72,6 +73,7 @@ export default function SectionRenderer({
   section,
   variables,
   equations = [],
+  figures = [],
   paperTitle,
   readingMode,
   onEquationExpand,
@@ -83,10 +85,7 @@ export default function SectionRenderer({
   return (
     <section id={section.id} className="mb-12">
       <ProgressiveReveal>
-        <h2
-          className="text-2xl font-display mb-2"
-          style={{ color: '#e8e0d0', fontFamily: 'Syne, sans-serif' }}
-        >
+        <h2 className="text-2xl font-display mb-2 text-text" style={{ fontFamily: 'Syne, sans-serif' }}>
           {section.title}
         </h2>
       </ProgressiveReveal>
@@ -101,12 +100,8 @@ export default function SectionRenderer({
             >
               <p
                 id={block.id}
-                className="text-base leading-relaxed"
-                style={{
-                  color: '#e8e0d0',
-                  fontFamily: 'IBM Plex Serif, serif',
-                  lineHeight: '1.85',
-                }}
+                className="text-base leading-relaxed text-text font-serif"
+                style={{ lineHeight: '1.85' }}
               >
                 {highlightVariables(block.raw, variables, onVariableHover)}
               </p>
@@ -123,18 +118,24 @@ export default function SectionRenderer({
             return (
               <div
                 id={block.id}
-                className="equation-container p-4 rounded my-4 overflow-x-auto"
-                style={{ backgroundColor: '#0a0e14', border: '1px solid #1a2235' }}
+                className="equation-container p-4 rounded my-4 overflow-x-auto bg-background border border-surface-2"
               >
                 <span dangerouslySetInnerHTML={{ __html: `\\[${block.raw}\\]` }} />
               </div>
             )
           })()}
-          {block.type === 'figure' && (
-            <div id={block.id} className="my-4 text-sm italic" style={{ color: '#9ca3af' }}>
-              {block.raw}
-            </div>
-          )}
+          {block.type === 'figure' && (() => {
+            const figure = figures.find((f) => f.id === block.id || block.raw.includes(f.label))
+            if (figure) {
+              return <FigureViewer figure={figure} />
+            }
+            return (
+              <div id={block.id} className="my-4 rounded border border-surface-2 p-4 flex items-center gap-3">
+                <span className="text-3xl">📊</span>
+                <p className="text-sm italic text-text-muted font-serif">{block.raw}</p>
+              </div>
+            )
+          })()}
         </ProgressiveReveal>
       ))}
 

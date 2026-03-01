@@ -69,3 +69,34 @@ export async function getWorkspaceUrl(workspaceId: string): Promise<string> {
   const workspace = await response.json()
   return workspace.iframeUrl || workspace.previewUrl || workspace.url
 }
+
+export interface ExecuteResult {
+  stdout: string
+  stderr: string
+  exitCode: number
+}
+
+export async function executeCode(workspaceId: string, code: string): Promise<ExecuteResult> {
+  const apiKey = process.env.DAYTONA_API_KEY
+  if (!apiKey) throw new Error('DAYTONA_API_KEY not configured')
+
+  const response = await fetch(`${DAYTONA_API_URL}/workspace/${workspaceId}/execute`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ command: 'python3', args: ['-c', code] }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Daytona execute error: ${response.status}`)
+  }
+
+  const result = await response.json()
+  return {
+    stdout: result.stdout || result.output || '',
+    stderr: result.stderr || result.error || '',
+    exitCode: result.exitCode ?? result.exit_code ?? 0,
+  }
+}

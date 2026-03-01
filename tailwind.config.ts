@@ -12,6 +12,8 @@ const config: Config = {
         background: '#0a0e14',
         surface: '#111827',
         'surface-2': '#1a2235',
+        'surface-3': '#0d1117',
+        'surface-4': '#080c12',
         text: '#e8e0d0',
         'text-muted': '#9ca3af',
         teal: '#00d4aa',
