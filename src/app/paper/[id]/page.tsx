@@ -45,6 +45,9 @@ export default function PaperPage() {
   const [discoveredArticles, setDiscoveredArticles] = useState<DiscoveredArticle[]>([])
   const [articleAnalysis, setArticleAnalysis] = useState<ArticleAnalysis | null>(null)
   const [conceptMapNodes, setConceptMapNodes] = useState<ConceptMapNode[]>([])
+  const [pdfFileId, setPdfFileId] = useState<string | null>(null)
+  const [pdfStatus, setPdfStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle')
+  const [pdfStatusMsg, setPdfStatusMsg] = useState('')
   const sectionRefs = useRef<HTMLElement[]>([])
 
   const { depth, recordAction } = useDepthMeter()
@@ -225,8 +228,39 @@ export default function PaperPage() {
     }
   }
 
-  const handleCitationClick = (citation: Citation) => {
-    const item: RabbitHoleItem = {
+  // Check if a PDF is already saved for this paper
+  useEffect(() => {
+    if (!paper) return
+    const id = params.id as string
+    if (!id) return
+    fetch(`/api/papers/${encodeURIComponent(id)}/pdf`, { method: 'HEAD' })
+      .then((res) => {
+        if (res.ok) setPdfFileId(id)
+      })
+      .catch(() => {/* unavailable */})
+  }, [paper, params.id])
+
+  const handleSavePdf = async () => {
+    if (!paper) return
+    const id = params.id as string
+    setPdfStatus('generating')
+    setPdfStatusMsg('Starting...')
+    try {
+      const { generateAndUploadPdf } = await import('@/lib/generateClientPdf')
+      await generateAndUploadPdf(id, paper.title, (msg) => setPdfStatusMsg(msg))
+      setPdfFileId(id)
+      setPdfStatus('success')
+      setPdfStatusMsg('PDF saved!')
+      setTimeout(() => { setPdfStatus('idle'); setPdfStatusMsg('') }, 3000)
+    } catch (e) {
+      console.warn('PDF save failed:', e)
+      setPdfStatus('error')
+      setPdfStatusMsg('Failed')
+      setTimeout(() => { setPdfStatus('idle'); setPdfStatusMsg('') }, 3000)
+    }
+  }
+
+  const handleCitationClick = (citation: Citation) => {    const item: RabbitHoleItem = {
       id: citation.id,
       title: citation.title,
       type: 'paper',
@@ -448,6 +482,30 @@ export default function PaperPage() {
           >
             {discoverLoading ? <><span className="animate-spin">⟳</span> Discovering...</> : '🔍 Discover Related'}
           </button>
+          {pdfFileId ? (
+            <a
+              href={`/api/papers/${encodeURIComponent(params.id as string)}/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all bg-surface text-teal border border-teal/30"
+            >
+              📄 View PDF
+            </a>
+          ) : (
+            <button
+              onClick={handleSavePdf}
+              disabled={pdfStatus === 'generating'}
+              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all bg-surface border border-surface-2 disabled:opacity-50 ${pdfStatus === 'error' ? 'text-red-400' : pdfStatus === 'success' ? 'text-teal' : 'text-text-muted'}`}
+            >
+              {pdfStatus === 'generating'
+                ? <><span className="animate-spin">⟳</span> {pdfStatusMsg}</>
+                : pdfStatus === 'success'
+                ? `✓ ${pdfStatusMsg}`
+                : pdfStatus === 'error'
+                ? `✗ ${pdfStatusMsg}`
+                : '📄 Save PDF'}
+            </button>
+          )}
         </div>
 
         {/* Sections */}

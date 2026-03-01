@@ -167,7 +167,7 @@ export default function HomePage() {
           {/* Demo button */}
           <button
             onClick={handleOpenDemo}
-            className="mb-8 px-5 py-2.5 rounded-lg text-sm transition-all"
+            className="mb-4 px-5 py-2.5 rounded-lg text-sm transition-all"
             style={{
               backgroundColor: '#111827',
               color: '#f5a623',
@@ -176,6 +176,21 @@ export default function HomePage() {
           >
             → Try demo: Mechanistic Interpretability
           </button>
+
+          {/* Saved Papers link */}
+          <div className="mb-8">
+            <button
+              onClick={() => router.push('/saved')}
+              className="px-4 py-2 rounded-lg text-sm transition-all"
+              style={{
+                backgroundColor: '#111827',
+                color: '#00d4aa',
+                border: '1px solid #00d4aa33',
+              }}
+            >
+              📚 Saved Papers
+            </button>
+          </div>
         </div>
 
         {/* Search */}
