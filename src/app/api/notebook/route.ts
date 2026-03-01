@@ -1,0 +1,87 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { generateNotebookCells } from '@/lib/claude'
+import { createWorkspace } from '@/lib/daytona'
+import { PaperMetadata } from '@/lib/types'
+
+export const runtime = 'nodejs'
+export const maxDuration = 60
+
+export async function POST(request: NextRequest) {
+  try {
+    const { paper, action } = await request.json() as { paper: PaperMetadata; action: 'create' | 'get' }
+
+    if (!paper || !paper.id) {
+      return NextResponse.json({ error: 'Paper data is required' }, { status: 400 })
+    }
+
+    if (action === 'get') {
+      // Return existing notebook status
+      return NextResponse.json({ status: 'pending', cells: [] })
+    }
+
+    // Generate notebook cells with Claude
+    let cells
+    if (process.env.ANTHROPIC_API_KEY) {
+      cells = await generateNotebookCells(paper)
+    } else {
+      // Demo fallback cells
+      cells = [
+        {
+          id: 'cell1',
+          type: 'markdown' as const,
+          content: `# ${paper.title}\n\n**Demo Notebook**\n\nThis notebook demonstrates the core concepts from this paper. Configure \`ANTHROPIC_API_KEY\` to generate a paper-specific notebook.`,
+        },
+        {
+          id: 'cell2',
+          type: 'code' as const,
+          content: `import numpy as np
+import matplotlib.pyplot as plt
+
+# Core demonstration
+# This would implement the paper's algorithm
+print("Paper:", "${paper.title}")
+print("Authors:", "${paper.authors.slice(0, 3).join(', ')}")`,
+          language: 'python',
+        },
+        {
+          id: 'cell3',
+          type: 'code' as const,
+          content: `# Try it yourself: explore parameters
+learning_rate = 0.01  # Try: 0.001, 0.1
+hidden_dims = 64      # Try: 32, 128, 256
+sparsity = 0.1        # Try: 0.01, 0.5
+
+print(f"Configuration: lr={learning_rate}, hidden={hidden_dims}, sparsity={sparsity}")`,
+          language: 'python',
+        }
+      ]
+    }
+
+    // Try to create Daytona workspace
+    let sandboxUrl
+    let daytonaWorkspaceId
+    if (process.env.DAYTONA_API_KEY) {
+      try {
+        const repoUrl = 'githubRepos' in paper ? (paper as any).githubRepos?.[0]?.url : undefined
+        const workspace = await createWorkspace(repoUrl)
+        sandboxUrl = workspace.url
+        daytonaWorkspaceId = workspace.id
+      } catch (e) {
+        console.warn('Daytona workspace creation failed:', e)
+      }
+    }
+
+    return NextResponse.json({
+      cells,
+      sandboxUrl,
+      daytonaWorkspaceId,
+      status: sandboxUrl ? 'ready' : 'cells-only',
+    })
+  } catch (error) {
+    console.error('Notebook error:', error)
+    return NextResponse.json(
+      { error: 'Notebook creation failed', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    )
+  }
+}
