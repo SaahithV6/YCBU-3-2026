@@ -7,7 +7,11 @@ async function initPyodide() {
   importScripts('https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.js')
   // eslint-disable-next-line no-undef
   pyodideInstance = await loadPyodide()
-  await pyodideInstance.loadPackage(['numpy', 'matplotlib', 'scipy'])
+  await pyodideInstance.loadPackage(['numpy', 'matplotlib', 'scipy', 'micropip'])
+  await pyodideInstance.runPythonAsync(`
+import micropip
+await micropip.install('daytona')
+`)
   // Set matplotlib to use non-interactive AGG backend
   pyodideInstance.runPython(`
 import matplotlib

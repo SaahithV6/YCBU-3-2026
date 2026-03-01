@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Section, Variable, Equation, ReadingMode, EvidenceChain as EvidenceChainType, Figure } from '@/lib/types'
+import { Section, Variable, Equation, ReadingMode, EvidenceChain as EvidenceChainType, Figure, NotebookCell } from '@/lib/types'
 import EquationRenderer from './EquationRenderer'
 import FigureViewer from './FigureViewer'
 import DontUnderstandButton from './DontUnderstandButton'
 import VariableHoverCard from './VariableHoverCard'
 import EvidenceChain from './EvidenceChain'
 import ProgressiveReveal from './ProgressiveReveal'
+import NotebookCellComponent from '@/components/Notebook/NotebookCell'
 
 interface SectionRendererProps {
   section: Section
@@ -19,6 +20,7 @@ interface SectionRendererProps {
   onEquationExpand?: () => void
   onVariableHover?: () => void
   evidenceChains?: EvidenceChainType[]
+  notebookCells?: NotebookCell[]
 }
 
 function highlightVariables(text: string, variables: Variable[], onHover?: () => void): React.ReactNode[] {
@@ -79,6 +81,7 @@ export default function SectionRenderer({
   onEquationExpand,
   onVariableHover,
   evidenceChains = [],
+  notebookCells = [],
 }: SectionRendererProps) {
   const [activeParagraph, setActiveParagraph] = useState<number | null>(null)
 
@@ -145,6 +148,28 @@ export default function SectionRenderer({
           {evidenceChains.map((chain, i) => (
             <EvidenceChain key={i} chain={chain} />
           ))}
+        </ProgressiveReveal>
+      )}
+
+      {/* Inline notebook cells */}
+      {notebookCells.length > 0 && (
+        <ProgressiveReveal delay={500}>
+          <div
+            className="mt-6 rounded-lg overflow-hidden"
+            style={{ backgroundColor: '#111827', border: '1px solid #1a2235' }}
+          >
+            <div
+              className="px-4 py-2 flex items-center gap-2"
+              style={{ backgroundColor: '#1a2235', borderBottom: '1px solid #1a2235' }}
+            >
+              <span style={{ color: '#00d4aa', fontFamily: 'Syne, sans-serif', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                🧪 Interactive Code
+              </span>
+            </div>
+            {notebookCells.map(cell => (
+              <NotebookCellComponent key={cell.id} cell={cell} />
+            ))}
+          </div>
         </ProgressiveReveal>
       )}
     </section>

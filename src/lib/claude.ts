@@ -83,7 +83,11 @@ export async function parsePaper(
   "citations": [{"id": "cite-1", "title": "...", "authors": ["..."], "year": 2020, "arxivId": "2001.xxxxx", "isFoundational": true}],
   "notationWarnings": [{"symbol": "x", "sectionA": "sec-intro", "meaningA": "input", "sectionB": "sec-method", "meaningB": "output"}],
   "evidenceChains": [{"claim": "...", "experiment": "...", "figureId": "fig-1", "statisticalResult": "p < 0.05", "conclusion": "...", "blockId": "blk-5"}],
-  "notebookCells": [{"id": "nb-1", "type": "markdown", "content": "# Overview", "sectionId": "sec-intro", "isEditable": false}],
+  "notebookCells": [
+    {"id": "nb-1", "type": "markdown", "content": "# Overview", "sectionId": "sec-intro", "isEditable": false},
+    {"id": "nb-2", "type": "code", "content": "import numpy as np\\n# Demonstrates intro concepts", "sectionId": "sec-intro", "isEditable": true},
+    {"id": "nb-3", "type": "code", "content": "from daytona import Daytona, DaytonaConfig\\nimport os\\nconfig = DaytonaConfig(api_key=os.environ.get(\\"DAYTONA_API_KEY\\", \\"YOUR_API_KEY\\"))\\ndaytona_client = Daytona(config)\\nsandbox = daytona_client.create()\\nresponse = sandbox.process.code_run('print(\\"Hello World\\")')\\nif response.exit_code != 0:\\n    print(f\\"Error: {response.exit_code} {response.result}\\")\\nelse:\\n    print(response.result)\\nsandbox.delete()", "sectionId": "sec-intro", "isEditable": true}
+  ],
   "githubUrl": "https://github.com/..."
 }
 
@@ -95,6 +99,7 @@ Make TL;DR exactly 3 sentences with sourceSentenceId referencing actual block ID
 Extract real equations using LaTeX. Include at least 5 sections with 3-5 paragraphs each.
 Preserve actual statistics, percentages, p-values, and experimental details from the paper.
 Each paragraph should be 3-5 sentences with dense, paper-like content including specific numbers and findings.
+For notebookCells: every section MUST have at least one markdown cell and one runnable Python code cell with its sectionId. Include the Daytona SDK pattern (from daytona import Daytona, DaytonaConfig) in at least one code cell. Available pip packages: numpy, matplotlib, scipy, daytona.
 Return ONLY valid JSON.`
 
   try {
@@ -187,18 +192,25 @@ export async function generateNotebookCells(
   sections: Array<{ id: string; title: string }>,
   githubUrl?: string
 ): Promise<NotebookCell[]> {
-  const prompt = `Generate a Jupyter notebook for: "${title}"
+  const sectionList = sections.map((s, i) => `  ${i + 1}. id="${s.id}" title="${s.title}"`).join('\n')
+  const prompt = `Generate an interactive Jupyter notebook for the research paper: "${title}"
 ${githubUrl ? `GitHub repository: ${githubUrl}` : ''}
-Sections: ${sections.map(s => s.title).join(', ')}
 
-Return JSON array of 5-8 notebook cells including markdown explanations, runnable Python code with numpy/matplotlib, and output cells:
-[
-  {"id": "nb-1", "type": "markdown", "content": "# ${title}\\n\\nOverview...", "sectionId": "${sections[0]?.id || 'sec-intro'}", "isEditable": false},
-  {"id": "nb-2", "type": "code", "content": "import numpy as np\\nimport matplotlib.pyplot as plt\\n# Core algorithm", "sectionId": "${sections[1]?.id || 'sec-method'}", "isEditable": true},
-  {"id": "nb-3", "type": "code", "content": "# Try it yourself: modify parameters\\n", "sectionId": "${sections[sections.length - 1]?.id || 'sec-results'}", "isEditable": true}
-]
+Sections that MUST each have at least one inline code cell:
+${sectionList}
 
-Include runnable Python demonstrating the paper's core algorithms. Return ONLY valid JSON array.`
+CRITICAL REQUIREMENTS:
+- Every section listed above MUST have at least one runnable Python code cell with sectionId matching that section's id.
+- Every section MUST also have at least one markdown cell with sectionId matching that section's id.
+- Available pip dependencies: numpy, matplotlib, scipy, daytona
+- The Daytona SDK pattern (from daytona import Daytona, DaytonaConfig) is available and should be demonstrated in at least one cell.
+
+Example cell shape:
+{"id": "nb-1", "type": "markdown", "content": "# Section Title\\n\\nExplains this section...", "sectionId": "${sections[0]?.id || 'sec-intro'}", "isEditable": false}
+{"id": "nb-2", "type": "code", "content": "import numpy as np\\nimport matplotlib.pyplot as plt\\n# Demonstrates core algorithm for this section\\nprint('result')", "sectionId": "${sections[0]?.id || 'sec-intro'}", "isEditable": true}
+{"id": "nb-3", "type": "code", "content": "from daytona import Daytona, DaytonaConfig\\nimport os\\n\\nconfig = DaytonaConfig(api_key=os.environ.get(\\"DAYTONA_API_KEY\\", \\"YOUR_API_KEY\\"))\\ndaytona = Daytona(config)\\nsandbox = daytona.create()\\nresponse = sandbox.process.code_run('print(\\"Hello World\\")')\\nif response.exit_code != 0:\\n    print(f\\"Error: {response.exit_code} {response.result}\\")\\nelse:\\n    print(response.result)\\nsandbox.delete()", "sectionId": "${sections[1]?.id || 'sec-method'}", "isEditable": true}
+
+Produce one markdown cell and at least one runnable Python code cell for EACH section. Return ONLY a valid JSON array of cells.`
 
   const maxRetries = 2
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
