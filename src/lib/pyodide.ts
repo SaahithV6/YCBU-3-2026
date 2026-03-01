@@ -1,7 +1,7 @@
 let worker: Worker | null = null
 let workerReady = false
 let pendingReady: Array<{ resolve: () => void; reject: (e: Error) => void }> = []
-let pendingRuns = new Map<number, { resolve: (r: { stdout: string; stderr: string }) => void; reject: (e: Error) => void }>()
+const pendingRuns = new Map<number, { resolve: (r: { stdout: string; stderr: string }) => void; reject: (e: Error) => void }>()
 let messageId = 0
 
 const EXECUTION_TIMEOUT_MS = 30_000
