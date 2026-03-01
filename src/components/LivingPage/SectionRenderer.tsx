@@ -28,27 +28,44 @@ interface SectionRendererProps {
 function highlightVariables(text: string, variables: Variable[], onHover?: () => void): React.ReactNode[] {
   if (!variables.length) return [text]
 
+  // Build a map for quick lookup and sort symbols longest-first to avoid partial matches
+  const varMap = new Map(variables.map(v => [v.symbol, v]))
+  const sortedSymbols = Array.from(varMap.keys()).sort((a, b) => b.length - a.length)
+
   const parts: React.ReactNode[] = []
   let remaining = text
   let keyIndex = 0
 
-  for (const variable of variables) {
-    const symbol = variable.symbol
-    const index = remaining.indexOf(symbol)
-    if (index === -1) continue
+  while (remaining.length > 0) {
+    let earliestIndex = -1
+    let matchedSymbol = ''
 
-    if (index > 0) {
-      parts.push(remaining.substring(0, index))
+    for (const symbol of sortedSymbols) {
+      const idx = remaining.indexOf(symbol)
+      if (idx !== -1 && (earliestIndex === -1 || idx < earliestIndex)) {
+        earliestIndex = idx
+        matchedSymbol = symbol
+      }
     }
+
+    if (earliestIndex === -1) {
+      parts.push(remaining)
+      break
+    }
+
+    if (earliestIndex > 0) {
+      parts.push(remaining.substring(0, earliestIndex))
+    }
+
+    const variable = varMap.get(matchedSymbol)!
     parts.push(
-      <VariableHoverCard key={`var-${keyIndex++}`} symbol={symbol} variable={variable} onHover={onHover}>
-        {symbol}
+      <VariableHoverCard key={`var-${keyIndex++}`} symbol={matchedSymbol} variable={variable} onHover={onHover}>
+        {matchedSymbol}
       </VariableHoverCard>
     )
-    remaining = remaining.substring(index + symbol.length)
+    remaining = remaining.substring(earliestIndex + matchedSymbol.length)
   }
 
-  if (remaining) parts.push(remaining)
   return parts.length > 0 ? parts : [text]
 }
 
