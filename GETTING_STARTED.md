@@ -35,58 +35,174 @@ npm install
 cp .env.local.example .env.local
 ```
 
-Open `.env.local` in your editor. The app has a **demo mode** that works without any API keys — if you just want to try it, leave everything blank and skip to step 5.
+Open `.env.local` in your editor. The app has a **demo mode** that works without any API keys — if you just want to try it, leave everything blank and skip to [Step 5](#5-run-the-development-server).
 
-To use real functionality, fill in the keys as described below.
+To unlock real functionality, follow Step 4 below. Each key is grouped by priority so you know what to set up first.
 
-### 4. Get API Keys (Optional — skip for demo mode)
+### 4. Get API Keys
 
-#### Anthropic API Key (paper processing)
-1. Go to [console.anthropic.com](https://console.anthropic.com)
-2. Create an account and generate an API key
-3. Set `ANTHROPIC_API_KEY=sk-ant-...` in `.env.local`
+Every key below is optional for demo mode. The table shows what breaks if you skip each one:
 
-#### Browser Use Cloud API Key (web agent search)
-1. Go to [cloud.browser-use.com](https://cloud.browser-use.com)
-2. Sign up and create an API key
-3. Set `BROWSER_USE_API_KEY=...` in `.env.local`
+| Variable | What it powers | If missing |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Paper processing (Claude) | Falls back to demo data from `src/data/demo-fallback.json` |
+| `BROWSER_USE_API_KEY` | Multi-source web search | Falls back to arXiv-only search |
+| `DAYTONA_API_KEY` + `DAYTONA_API_URL` | Notebook sandboxes | Sandbox feature returns a 503 error |
+| `NEXT_PUBLIC_CONVEX_URL` | Real-time processing status | App works, but no live status updates |
+| `CONVEX_DEPLOY_KEY` | Production deploys to Convex | Only needed for Vercel deployment |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY` | User authentication | Auth disabled; core reading still works |
+| `MONGODB_URI` | Persistent data storage | Persistence features disabled |
+| `SUPERMEMORY_API_KEY` | Cross-session paper memory | Memory/recall features disabled |
+| `LAMINAR_API_KEY` | Observability / tracing | No tracing; everything else works |
 
-#### Daytona API Key (notebook sandboxes)
-1. Go to [app.daytona.io](https://app.daytona.io)
-2. Create an account and generate an API key
-3. Set `DAYTONA_API_KEY=...` in `.env.local`
+---
 
-#### Daytona API URL
-1. Set `DAYTONA_API_URL=https://app.daytona.io/api` in `.env.local`
-2. If you are self-hosting Daytona, use your own URL instead
+#### 🔴 Core Keys (needed for full functionality)
 
-#### Convex (real-time data layer)
-1. Install the Convex CLI: `npm install -g convex`
-2. Run `npx convex dev` in the project root — it will prompt you to log in and create a deployment
-3. Copy the `NEXT_PUBLIC_CONVEX_URL` it prints into your `.env.local`
+##### Anthropic — `ANTHROPIC_API_KEY`
 
-#### Convex Deploy Key (needed for production deploys)
-1. Go to your [Convex dashboard](https://dashboard.convex.dev)
-2. Navigate to your project → **Settings → Deploy Keys**
-3. Generate a key and set `CONVEX_DEPLOY_KEY=...` in `.env.local`
+Powers all paper processing via Claude.
 
-#### Clerk (authentication — optional for local dev)
-1. Go to [clerk.com](https://clerk.com) and create an application
-2. Copy the publishable and secret keys into `.env.local`
-3. If you skip this, authentication features are disabled but core reading still works
+1. Go to **[console.anthropic.com](https://console.anthropic.com)** → sign up or log in
+2. Click **API Keys** in the left sidebar → **Create Key**
+3. Copy the key (starts with `sk-ant-...`)
+4. Paste into `.env.local`:
+   ```
+   ANTHROPIC_API_KEY=sk-ant-your-key-here
+   ```
 
-#### MongoDB Atlas (data persistence)
-1. Go to [cloud.mongodb.com](https://cloud.mongodb.com) and create a free cluster
-2. Click **Connect → Drivers** to get the connection string
-3. Set `MONGODB_URI=mongodb+srv://...` in `.env.local`
+> **Cost:** Pay-as-you-go. New accounts get $5 free credit. Processing one paper costs roughly $0.02–$0.10 depending on length.
 
-#### Supermemory (memory layer)
-1. Go to the Supermemory dashboard and create an account
-2. Generate an API key and set `SUPERMEMORY_API_KEY=...` in `.env.local`
+##### Browser Use Cloud — `BROWSER_USE_API_KEY`
 
-#### Laminar (observability)
-1. Go to the Laminar observability dashboard and create an account
-2. Generate an API key and set `LAMINAR_API_KEY=...` in `.env.local`
+Powers the multi-source web agent that searches across 11 academic sources (arXiv, PubMed, CORE, etc.).
+
+1. Go to **[cloud.browser-use.com](https://cloud.browser-use.com)** → sign up
+2. Go to **Dashboard → API Keys** → create a new key
+3. Copy the key and paste into `.env.local`:
+   ```
+   BROWSER_USE_API_KEY=your-key-here
+   ```
+
+> **Cost:** Pay-as-you-go. Check [browser-use.com/pricing](https://browser-use.com/pricing) for current rates. Each search uses one agent run.
+> **If skipped:** Search still works — it falls back to arXiv directly, but you only get results from one source instead of eleven.
+
+##### Daytona — `DAYTONA_API_KEY` + `DAYTONA_API_URL`
+
+Powers the interactive notebook sandboxes (run code cells from papers).
+
+1. Go to **[app.daytona.io](https://app.daytona.io)** → sign up
+2. Click your profile icon → **API Keys** → **Generate New Key**
+3. Copy the key and paste into `.env.local`:
+   ```
+   DAYTONA_API_KEY=your-key-here
+   DAYTONA_API_URL=https://app.daytona.io/api
+   ```
+   If you're self-hosting Daytona, replace the URL with your own.
+
+> **Cost:** Free tier available. See [daytona.io/pricing](https://www.daytona.io/pricing) for limits.
+
+---
+
+#### 🟡 Infrastructure Keys (real-time features & auth)
+
+##### Convex — `NEXT_PUBLIC_CONVEX_URL`
+
+Powers real-time processing status updates in the UI.
+
+1. Install the Convex CLI (if you haven't):
+   ```bash
+   npm install -g convex
+   ```
+2. From the project root, run:
+   ```bash
+   npx convex dev
+   ```
+3. It will open your browser to log in / create an account at **[convex.dev](https://www.convex.dev)** (free tier available)
+4. Once authenticated, it prints a URL like `https://your-app-name.convex.cloud`
+5. Copy that URL into `.env.local`:
+   ```
+   NEXT_PUBLIC_CONVEX_URL=https://your-app-name.convex.cloud
+   ```
+
+> **Cost:** Free for small projects. See [convex.dev/pricing](https://convex.dev/pricing).
+> **Note:** Keep `npx convex dev` running in a separate terminal while developing — it syncs your schema in real time.
+
+##### Convex Deploy Key — `CONVEX_DEPLOY_KEY`
+
+Only needed for **production deploys** (Vercel). Skip this for local development.
+
+1. Go to **[dashboard.convex.dev](https://dashboard.convex.dev)** → select your project
+2. Go to **Settings → Deploy Keys → Generate Deploy Key**
+3. Copy the key into `.env.local`:
+   ```
+   CONVEX_DEPLOY_KEY=your-deploy-key-here
+   ```
+
+##### Clerk — `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY`
+
+Powers user authentication (sign-in, sign-up, session management).
+
+1. Go to **[dashboard.clerk.com](https://dashboard.clerk.com)** → sign up (free)
+2. Click **Create Application** → give it a name → choose sign-in methods (email, Google, etc.)
+3. After creation, Clerk shows you **API Keys** on the quickstart page. You need two keys:
+   - **Publishable key** (starts with `pk_test_...`)
+   - **Secret key** (starts with `sk_test_...`)
+4. Paste both into `.env.local`:
+   ```
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your-key-here
+   CLERK_SECRET_KEY=sk_test_your-key-here
+   ```
+
+> **Cost:** Free for up to 10,000 monthly active users. You do **not** need to pay. See [clerk.com/pricing](https://clerk.com/pricing).
+> **If skipped:** Authentication features are disabled, but all core reading features still work.
+
+---
+
+#### 🟢 Optional Keys (persistence, memory, observability)
+
+##### MongoDB Atlas — `MONGODB_URI`
+
+Used for persistent data storage.
+
+1. Go to **[cloud.mongodb.com](https://cloud.mongodb.com)** → sign up (free)
+2. Click **Build a Database** → choose the **Free / M0** tier → pick a cloud region → **Create**
+3. Create a database user (username + password) when prompted
+4. On the cluster page, click **Connect → Drivers**
+5. Copy the connection string and replace `<password>` with your actual password:
+   ```
+   MONGODB_URI=mongodb+srv://your-username:your-password@cluster0.xxxxx.mongodb.net/living-papers
+   ```
+
+> **Cost:** M0 free tier (512 MB) is more than enough for development.
+
+##### Supermemory — `SUPERMEMORY_API_KEY`
+
+Powers cross-session paper memory (remembers papers you've read before).
+
+1. Go to **[supermemory.ai](https://supermemory.ai)** → sign up
+2. Go to **Dashboard → API Keys** → generate a key
+3. Paste into `.env.local`:
+   ```
+   SUPERMEMORY_API_KEY=your-key-here
+   ```
+
+> **Cost:** Check [supermemory.ai](https://supermemory.ai) for current pricing. Free tier may be available.
+
+##### Laminar — `LAMINAR_API_KEY`
+
+Used for observability and tracing of API calls. Useful for debugging, not required for functionality.
+
+1. Go to **[lmnr.ai](https://www.lmnr.ai)** → sign up
+2. Go to **Settings → API Keys** → generate a key
+3. Paste into `.env.local`:
+   ```
+   LAMINAR_API_KEY=your-key-here
+   ```
+
+> **Cost:** Free tier available. See [lmnr.ai/pricing](https://lmnr.ai/pricing).
+
+---
 
 ### 5. Run the Development Server
 
@@ -94,7 +210,7 @@ To use real functionality, fill in the keys as described below.
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). You're done! 🎉
 
 ---
 
@@ -110,121 +226,109 @@ Demo mode works **without any API keys**. It pre-loads a processed paper on Mech
 
 ## Troubleshooting
 
-### `ANTHROPIC_API_KEY` not set — paper processing returns demo data
-This is expected. The `/api/process` route falls back to `src/data/demo-fallback.json` when the Anthropic key is missing or the paper ID matches a known demo paper.
-
-### `BROWSER_USE_API_KEY` not set — search falls back to arXiv
-The `/api/search` route tries Browser Use Cloud first, then falls back to the arXiv API. You can search without any keys; results will come from arXiv directly.
-
-### Convex not configured — real-time features disabled
-The app works without Convex but won't show live processing status. Run `npx convex dev` to enable it.
-
-### Port 3000 already in use
-```bash
-npm run dev -- -p 3001
-```
-
-### TypeScript errors after pulling changes
-```bash
-npm install
-npm run build
-```
-
-### MathJax equations not rendering
-MathJax loads from a CDN (`cdn.jsdelivr.net`). Check your internet connection. The script is injected lazily — equations render on scroll into view.
+| Problem | Cause | Fix |
+|---|---|---|
+| Paper processing returns demo data | `ANTHROPIC_API_KEY` not set | Expected in demo mode. Add the key to get real processing. |
+| Search only returns arXiv results | `BROWSER_USE_API_KEY` not set | Expected — arXiv is the fallback. Add the key for multi-source search. |
+| No live processing status | Convex not configured | Run `npx convex dev` in a separate terminal. |
+| Port 3000 already in use | Another process is using port 3000 | Run `npm run dev -- -p 3001` |
+| TypeScript errors after pull | Dependencies out of date | Run `npm install && npm run build` |
+| MathJax equations not rendering | CDN not loaded | Check your internet connection. MathJax loads lazily from `cdn.jsdelivr.net` on scroll.
 
 ---
 
-## Deployment (Vercel)
+## Deploying to Vercel
 
-### Prerequisites
-- A Vercel account at [vercel.com](https://vercel.com)
-- **Vercel Pro plan** — required because the API routes use extended serverless function timeouts:
-  - `/api/search` uses `maxDuration = 60` (Browser Use needs time to traverse multiple sources)
-  - `/api/process` uses `maxDuration = 120` (PDF extraction + Claude processing)
-  - The Vercel Hobby plan limits serverless functions to 10 seconds, which is not enough
+### What You Need
 
-### Import and Configure
+- A **Vercel Pro plan** ($20/mo) — required because the API routes need extended timeouts:
+  - `/api/search` → 60 seconds (Browser Use agent traversal)
+  - `/api/process` → 120 seconds (PDF extraction + Claude)
+  - Vercel's free Hobby plan caps functions at 10 seconds, which is not enough
+- All API keys from Step 4 above
+- A Convex **production** deployment (different from your local dev one)
 
-1. Push your code to GitHub (if not already)
-2. Go to [vercel.com/new](https://vercel.com/new) and import the `YCBU-3-2026` repository
-3. Vercel auto-detects Next.js — the defaults are correct:
-   - **Framework Preset:** Next.js
-   - **Build Command:** `next build`
-   - **Output Directory:** `.next`
-   - **Node.js Version:** 18.x or 20.x
+### Step 1 — Create a Convex Production Deployment
 
-### Environment Variables
+Your local `npx convex dev` creates a **development** deployment. Production needs its own:
 
-Add **all** environment variables in **Vercel Dashboard → Project Settings → Environment Variables**.
+```bash
+npx convex deploy
+```
 
-Copy every key from your `.env.local` into Vercel. Critical notes:
+This prints a production URL like `https://your-app-name.convex.cloud`. **Save this URL** — you'll need it in Step 3.
 
-| Variable | Notes |
-|---|---|
-| `NEXT_PUBLIC_CONVEX_URL` | Must be your **production** Convex URL (see below), not the dev URL |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Same key works for dev and prod |
-| `CLERK_SECRET_KEY` | Same key works for dev and prod |
-| `ANTHROPIC_API_KEY` | Same key for all environments |
-| `BROWSER_USE_API_KEY` | Same key for all environments |
-| `DAYTONA_API_KEY` | Same key for all environments |
-| `DAYTONA_API_URL` | `https://app.daytona.io/api` |
-| `MONGODB_URI` | Your production MongoDB Atlas connection string |
-| `SUPERMEMORY_API_KEY` | Same key for all environments |
-| `LAMINAR_API_KEY` | Same key for all environments |
-| `CONVEX_DEPLOY_KEY` | From Convex dashboard — needed for production schema pushes |
+> ⚠️ `npx convex dev` and `npx convex deploy` point to **different** deployments. Make sure Vercel uses the production one.
 
-### Convex Production Deployment
+### Step 2 — Import the Project on Vercel
 
-Local development uses `npx convex dev` which creates a **development** deployment. For production:
+1. Go to **[vercel.com/new](https://vercel.com/new)**
+2. Import the `YCBU-3-2026` repository from GitHub
+3. Vercel auto-detects Next.js — **don't change any build settings**:
+   - Framework Preset: **Next.js**
+   - Build Command: `next build`
+   - Output Directory: `.next`
+   - Node.js Version: 18.x or 20.x
 
-1. Run `npx convex deploy` — this pushes your schema and functions to a **production** Convex deployment
-2. Copy the production URL it outputs (looks like `https://your-app-name.convex.cloud`)
-3. Set this as `NEXT_PUBLIC_CONVEX_URL` in your Vercel environment variables
-4. Set `CONVEX_DEPLOY_KEY` in Vercel env vars — this allows CI/CD to push schema changes automatically
+**Don't click Deploy yet** — add environment variables first.
 
-**Important:** `npx convex dev` and `npx convex deploy` target different deployments. Make sure Vercel points to the production one.
+### Step 3 — Add Environment Variables
 
-### Clerk Domain Configuration
+In the same import screen (or later in **Project Settings → Environment Variables**), add every key:
 
-After your first Vercel deploy:
+```
+ANTHROPIC_API_KEY=sk-ant-...
+BROWSER_USE_API_KEY=...
+DAYTONA_API_KEY=...
+DAYTONA_API_URL=https://app.daytona.io/api
+NEXT_PUBLIC_CONVEX_URL=https://your-app-name.convex.cloud  ← USE THE PRODUCTION URL FROM STEP 1
+CONVEX_DEPLOY_KEY=...
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+MONGODB_URI=mongodb+srv://...
+SUPERMEMORY_API_KEY=...
+LAMINAR_API_KEY=...
+```
 
-1. Go to [dashboard.clerk.com](https://dashboard.clerk.com) → your application
-2. Navigate to **Paths** or **Redirect URLs**
-3. Add your Vercel production domain (e.g., `https://your-app.vercel.app`) to the allowed redirect URLs
+> ⚠️ **Critical:** `NEXT_PUBLIC_CONVEX_URL` must be your **production** Convex URL from Step 1, not the `localhost` or dev URL.
+
+### Step 4 — Deploy
+
+Click **Deploy** and wait ~1–2 minutes for the build.
+
+### Step 5 — Configure Clerk Redirects
+
+After your first deploy, Clerk needs to know your production domain:
+
+1. Go to **[dashboard.clerk.com](https://dashboard.clerk.com)** → your application
+2. Go to **Paths** (or **Redirect URLs**)
+3. Add your Vercel domain: `https://your-app.vercel.app`
 4. If using a custom domain, add that too
-5. If using Clerk webhooks, update the webhook endpoint URL to your production domain
 
-### Deploy
+> Without this step, sign-in will redirect to `localhost` instead of your live site.
 
-1. Click **Deploy** in Vercel (or push to your main branch if auto-deploy is enabled)
-2. Wait for the build to complete (~1-2 minutes)
+### Step 6 — Verify
 
-### Post-Deploy Verification
-
-After deployment, verify everything works:
-
-1. **Visit your deployed URL** — the landing page should load with the search input
-2. **Try the demo query** — search for "mechanistic interpretability" to test the demo fallback data
-3. **Check Vercel Function Logs** — go to Vercel Dashboard → Deployments → Functions tab. Look for any errors about missing environment variables
-4. **Check Convex Dashboard** — verify your production deployment is receiving data
-5. **Test a real search** (if Browser Use key is set) — try a non-demo query and confirm results come back
+1. **Visit your deployed URL** — the landing page should load
+2. **Search "mechanistic interpretability"** — should return demo results
+3. **Check Vercel Function Logs** (Dashboard → Deployments → Functions) — look for missing env var errors
+4. **Try a non-demo search** (if Browser Use key is set) — confirm multi-source results come back
 
 ### Custom Domain (Optional)
 
-1. Go to Vercel Dashboard → Project Settings → Domains
-2. Add your custom domain and follow the DNS configuration instructions
-3. Update Clerk redirect URLs to include the custom domain
+1. Go to **Vercel Dashboard → Project Settings → Domains**
+2. Add your domain and follow the DNS instructions Vercel gives you
+3. Go back to Clerk and add the custom domain to allowed redirect URLs
 
-### Troubleshooting Deployment Issues
+### Deployment Troubleshooting
 
-| Issue | Fix |
+| Problem | Fix |
 |---|---|
-| Functions timing out on Hobby plan | Upgrade to Vercel Pro — the search and process routes need >10s |
-| "NEXT_PUBLIC_CONVEX_URL not configured" | Make sure you ran `npx convex deploy` and set the production URL |
-| Clerk sign-in redirects to localhost | Add your Vercel domain to Clerk's allowed redirect URLs |
-| Convex schema mismatch | Run `npx convex deploy` again to push latest schema to production |
-| Build fails with missing dependencies | Run `npm install` locally first, ensure `package-lock.json` is committed |
+| Functions timing out | You need Vercel Pro — Hobby plan's 10s limit is too short |
+| `NEXT_PUBLIC_CONVEX_URL not configured` | Run `npx convex deploy` and set the production URL in Vercel env vars |
+| Clerk redirects to `localhost` | Add your Vercel domain in Clerk Dashboard → Redirect URLs |
+| Convex schema mismatch | Run `npx convex deploy` again to push the latest schema |
+| Build fails with missing deps | Run `npm install` locally and make sure `package-lock.json` is committed |
 
 ---
 
