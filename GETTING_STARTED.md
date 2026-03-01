@@ -14,7 +14,7 @@ This guide gets you from zero to a running app in under 10 minutes.
 
 ---
 
-## Step-by-Step Setup
+## Step-by-Step Setuprreded
 
 ### 1. Clone the Repository
 
