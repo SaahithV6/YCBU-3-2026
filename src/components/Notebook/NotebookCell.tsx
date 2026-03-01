@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import hljs from 'highlight.js/lib/core'
 import python from 'highlight.js/lib/languages/python'
 import 'highlight.js/styles/github-dark.css'
@@ -21,6 +21,10 @@ export default function NotebookCell({ cell, workspaceId, onRun }: NotebookCellP
   const [outputError, setOutputError] = useState('')
   const [executionMode, setExecutionMode] = useState<'daytona' | 'pyodide' | null>(null)
   const codeRef = useRef<HTMLElement>(null)
+
+  const outputLines = useMemo(() => output.split('\n'), [output])
+  const textOutput = useMemo(() => outputLines.filter(l => !l.startsWith('__IMG__:')).join('\n').trim(), [outputLines])
+  const plotImages = useMemo(() => outputLines.filter(l => l.startsWith('__IMG__:')).map(l => l.slice(8)), [outputLines])
 
   useEffect(() => {
     if (cell.type === 'code' && codeRef.current) {
@@ -132,9 +136,13 @@ export default function NotebookCell({ cell, workspaceId, onRun }: NotebookCellP
             {cell.content}
           </code>
         </pre>
-        {(output || outputError) && (
+        {(textOutput || plotImages.length > 0 || outputError) && (
           <div className="px-4 py-3 text-xs font-mono border-t border-surface-2 bg-surface-4 whitespace-pre-wrap">
-            {output && <span className="text-teal">{output}</span>}
+            {textOutput && <span className="text-teal">{textOutput}</span>}
+            {plotImages.map((src, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={i} src={`data:image/png;base64,${src}`} alt={`Plot ${i + 1}`} className="max-w-full rounded my-2 block" />
+            ))}
             {outputError && <span className="text-amber">{outputError}</span>}
           </div>
         )}
