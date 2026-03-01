@@ -1,24 +1,58 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import hljs from 'highlight.js/lib/core'
+import python from 'highlight.js/lib/languages/python'
+import 'highlight.js/styles/github-dark.css'
 import { NotebookCell as NotebookCellType } from '@/lib/types'
+
+hljs.registerLanguage('python', python)
 
 interface NotebookCellProps {
   cell: NotebookCellType
+  workspaceId?: string
   onRun?: (cellId: string) => void
 }
 
-export default function NotebookCell({ cell, onRun }: NotebookCellProps) {
+export default function NotebookCell({ cell, workspaceId, onRun }: NotebookCellProps) {
   const [isRunning, setIsRunning] = useState(false)
   const [output, setOutput] = useState('')
+  const [outputError, setOutputError] = useState('')
+  const codeRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (cell.type === 'code' && codeRef.current) {
+      codeRef.current.removeAttribute('data-highlighted')
+      hljs.highlightElement(codeRef.current)
+    }
+  }, [cell.content, cell.type])
 
   const handleRun = async () => {
     if (cell.type !== 'code') return
     setIsRunning(true)
+    setOutput('')
+    setOutputError('')
     try {
-      await new Promise(r => setTimeout(r, 800)) // Simulate execution
-      setOutput(`# Output\nExecution simulated. In production, this would run in a Daytona sandbox.\n\nCell executed successfully at ${new Date().toISOString()}`)
+      if (!workspaceId) {
+        // No sandbox — show clear message
+        setOutputError('Sandbox unavailable: no active Daytona workspace. Configure DAYTONA_API_KEY to enable execution.')
+        return
+      }
+      const response = await fetch('/api/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: cell.content, workspaceId }),
+      })
+      const data = await response.json() as { stdout?: string; stderr?: string; error?: string; exitCode?: number }
+      if (!response.ok) {
+        setOutputError(data.error || 'Execution failed')
+      } else {
+        setOutput(data.stdout || '')
+        if (data.stderr) setOutputError(data.stderr)
+      }
       onRun?.(cell.id)
+    } catch (e) {
+      setOutputError(e instanceof Error ? e.message : 'Execution failed')
     } finally {
       setIsRunning(false)
     }
@@ -26,17 +60,11 @@ export default function NotebookCell({ cell, onRun }: NotebookCellProps) {
 
   if (cell.type === 'markdown') {
     return (
-      <div
-        className="p-4 rounded-t-none rounded-b-none"
-        style={{ borderBottom: '1px solid #1a2235' }}
-      >
-        <div
-          className="text-sm leading-relaxed prose prose-invert max-w-none"
-          style={{ color: '#e8e0d0', fontFamily: 'IBM Plex Serif, serif' }}
-        >
+      <div className="p-4 border-b border-surface-2">
+        <div className="text-sm leading-relaxed prose prose-invert max-w-none text-text font-serif">
           {cell.content.split('\n').map((line, i) => {
             if (line.startsWith('# ')) {
-              return <h3 key={i} style={{ color: '#e8e0d0', fontFamily: 'Syne', fontSize: '1rem', marginBottom: '0.5rem' }}>{line.slice(2)}</h3>
+              return <h3 key={i} className="text-text font-display text-base mb-2">{line.slice(2)}</h3>
             }
             return <span key={i}>{line}<br /></span>
           })}
@@ -47,11 +75,9 @@ export default function NotebookCell({ cell, onRun }: NotebookCellProps) {
 
   if (cell.type === 'code') {
     return (
-      <div style={{ borderBottom: '1px solid #1a2235' }}>
-        <div className="flex items-center justify-between px-3 py-1.5" style={{ backgroundColor: '#0d1117' }}>
-          <span className="text-xs font-mono" style={{ color: '#9ca3af' }}>
-            python
-          </span>
+      <div className="border-b border-surface-2">
+        <div className="flex items-center justify-between px-3 py-1.5 bg-surface-3">
+          <span className="text-xs font-mono text-text-muted">python</span>
           <button
             onClick={handleRun}
             disabled={isRunning}
@@ -63,37 +89,21 @@ export default function NotebookCell({ cell, onRun }: NotebookCellProps) {
             }}
           >
             {isRunning ? (
-              <>
-                <span className="animate-spin text-xs">⟳</span>
-                Running...
-              </>
+              <><span className="animate-spin text-xs">⟳</span>Running...</>
             ) : (
               <>▶ Run</>
             )}
           </button>
         </div>
-        <pre
-          className="p-4 overflow-x-auto text-sm"
-          style={{
-            backgroundColor: '#0a0e14',
-            color: '#e8e0d0',
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: '0.8rem',
-          }}
-        >
-          <code>{cell.content}</code>
+        <pre className="p-4 overflow-x-auto bg-background m-0 rounded-none">
+          <code ref={codeRef} className="language-python text-xs font-mono">
+            {cell.content}
+          </code>
         </pre>
-        {output && (
-          <div
-            className="px-4 py-3 text-xs font-mono"
-            style={{
-              backgroundColor: '#080c12',
-              color: '#00d4aa',
-              borderTop: '1px solid #1a2235',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {output}
+        {(output || outputError) && (
+          <div className="px-4 py-3 text-xs font-mono border-t border-surface-2 bg-surface-4 whitespace-pre-wrap">
+            {output && <span className="text-teal">{output}</span>}
+            {outputError && <span className="text-amber">{outputError}</span>}
           </div>
         )}
       </div>
@@ -102,3 +112,4 @@ export default function NotebookCell({ cell, onRun }: NotebookCellProps) {
 
   return null
 }
+

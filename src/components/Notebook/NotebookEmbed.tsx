@@ -14,6 +14,7 @@ interface NotebookEmbedProps {
 interface NotebookData {
   cells: NotebookCellType[]
   sandboxUrl?: string
+  daytonaWorkspaceId?: string
   status: string
 }
 
@@ -33,7 +34,7 @@ export default function NotebookEmbed({ paper, isOpen, onClose, onCellRun }: Not
           body: JSON.stringify({ paper, action: 'create' }),
         })
         if (response.ok) {
-          const data = await response.json()
+          const data = await response.json() as NotebookData
           setNotebook(data)
         }
       } catch (e) {
@@ -49,34 +50,35 @@ export default function NotebookEmbed({ paper, isOpen, onClose, onCellRun }: Not
   if (!isOpen) return null
 
   return (
-    <div
-      className="fixed right-0 top-0 h-full z-50 flex flex-col animate-slide-in-right"
-      style={{
-        width: '480px',
-        backgroundColor: '#111827',
-        borderLeft: '1px solid #1a2235',
-        boxShadow: '-4px 0 24px rgba(0,0,0,0.5)',
-      }}
-    >
+    <div className="fixed right-0 top-0 h-full z-50 flex flex-col animate-slide-in-right bg-surface border-l border-surface-2 shadow-2xl" style={{ width: '480px' }}>
       {/* Header */}
-      <div
-        className="flex items-center justify-between px-4 py-3"
-        style={{ borderBottom: '1px solid #1a2235' }}
-      >
+      <div className="flex items-center justify-between px-4 py-3 border-b border-surface-2">
         <div>
-          <p className="text-xs font-display uppercase tracking-wider" style={{ color: '#00d4aa' }}>Notebook</p>
-          <p className="text-xs mt-0.5" style={{ color: '#9ca3af', maxWidth: '300px' }} title={paper.title}>
+          <p className="text-xs font-display uppercase tracking-wider text-teal">Notebook</p>
+          <p className="text-xs mt-0.5 text-text-muted" style={{ maxWidth: '300px' }} title={paper.title}>
             {paper.title.substring(0, 50)}{paper.title.length > 50 ? '...' : ''}
           </p>
         </div>
         <button
           onClick={onClose}
-          className="w-7 h-7 flex items-center justify-center rounded"
-          style={{ color: '#9ca3af', backgroundColor: '#1a2235' }}
+          className="w-7 h-7 flex items-center justify-center rounded text-text-muted bg-surface-2"
         >
           ×
         </button>
       </div>
+
+      {/* Sandbox iframe (when available) */}
+      {notebook?.sandboxUrl && (
+        <div className="border-b border-surface-2">
+          <iframe
+            src={notebook.sandboxUrl}
+            className="w-full"
+            style={{ height: '200px' }}
+            title="Daytona Sandbox"
+            sandbox="allow-scripts allow-same-origin allow-forms"
+          />
+        </div>
+      )}
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto">
@@ -84,7 +86,7 @@ export default function NotebookEmbed({ paper, isOpen, onClose, onCellRun }: Not
           <div className="flex items-center justify-center h-32">
             <div className="text-center">
               <div className="animate-spin text-2xl mb-2">⟳</div>
-              <p className="text-xs" style={{ color: '#9ca3af' }}>Generating notebook...</p>
+              <p className="text-xs text-text-muted">Generating notebook...</p>
             </div>
           </div>
         )}
@@ -95,6 +97,7 @@ export default function NotebookEmbed({ paper, isOpen, onClose, onCellRun }: Not
               <NotebookCell
                 key={cell.id}
                 cell={cell}
+                workspaceId={notebook.daytonaWorkspaceId}
                 onRun={() => onCellRun?.()}
               />
             ))}
@@ -103,18 +106,15 @@ export default function NotebookEmbed({ paper, isOpen, onClose, onCellRun }: Not
 
         {!isLoading && !notebook && (
           <div className="flex items-center justify-center h-32">
-            <p className="text-xs" style={{ color: '#9ca3af' }}>Failed to load notebook</p>
+            <p className="text-xs text-text-muted">Failed to load notebook</p>
           </div>
         )}
       </div>
 
       {/* Footer */}
       {notebook?.sandboxUrl && (
-        <div
-          className="px-4 py-2 text-xs"
-          style={{ borderTop: '1px solid #1a2235', color: '#9ca3af' }}
-        >
-          <a href={notebook.sandboxUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#00d4aa' }}>
+        <div className="px-4 py-2 text-xs border-t border-surface-2 text-text-muted">
+          <a href={notebook.sandboxUrl} target="_blank" rel="noopener noreferrer" className="text-teal">
             Open in Daytona ↗
           </a>
         </div>
@@ -122,3 +122,4 @@ export default function NotebookEmbed({ paper, isOpen, onClose, onCellRun }: Not
     </div>
   )
 }
+

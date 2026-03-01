@@ -17,6 +17,14 @@ import { useDepthMeter } from '@/hooks/useDepthMeter'
 import { useRabbitHole } from '@/hooks/useRabbitHole'
 import demoData from '@/data/demo-fallback.json'
 import { SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/nextjs'
+import type { ArticleAnalysis } from '@/app/api/analyze-articles/route'
+import type { DiscoveredArticle } from '@/app/api/browser-use/route'
+
+interface SupermemoryResult {
+  content: string
+  metadata: { title: string; sourceUrl: string; paperId?: string }
+  score: number
+}
 
 export default function PaperPage() {
   const params = useParams()
@@ -31,18 +39,22 @@ export default function PaperPage() {
   const [showRabbitHolePanel, setShowRabbitHolePanel] = useState(false)
   const [citationFilter, setCitationFilter] = useState<'all' | 'foundational' | 'recent'>('all')
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0)
+  const [relatedMemories, setRelatedMemories] = useState<SupermemoryResult[]>([])
+  const [discoverLoading, setDiscoverLoading] = useState(false)
+  const [discoveredArticles, setDiscoveredArticles] = useState<DiscoveredArticle[]>([])
+  const [articleAnalysis, setArticleAnalysis] = useState<ArticleAnalysis | null>(null)
   const sectionRefs = useRef<HTMLElement[]>([])
 
   const { depth, recordAction } = useDepthMeter()
   const { stack, current: rabbitHoleCurrent, currentIndex: rabbitHoleIndex, push: pushRabbitHole, goBack: rabbitHoleBack, goForward: rabbitHoleForward } = useRabbitHole()
 
-  // Load paper data
+  // Load paper data — try MongoDB first, then sessionStorage, then demo
   useEffect(() => {
     const id = params.id as string
     if (!id) return
 
     const decodedId = decodeURIComponent(id)
-    
+
     // Check demo data first
     const demoPaper = demoData.papers.find(p => p.id === decodedId || p.id.replace('arxiv:', '') === decodedId)
     if (demoPaper) {
@@ -63,20 +75,56 @@ export default function PaperPage() {
       // ignore
     }
 
-    // Safety timeout: stop loading after 30 s rather than spinning forever
+    // Try MongoDB via API
     let mounted = true
+    fetch(`/api/papers/${encodeURIComponent(decodedId)}`)
+      .then(async (res) => {
+        if (res.ok && mounted) {
+          const data = await res.json() as ProcessedPaper
+          setPaper(data)
+        }
+      })
+      .catch(() => {/* MongoDB unavailable — silently ignore */})
+      .finally(() => { if (mounted) setIsLoading(false) })
+
     const timeoutId = setTimeout(() => {
       if (mounted) setIsLoading(false)
     }, 30000)
-
-    // No server-side cache to query without original metadata — stop loading now
-    setIsLoading(false)
 
     return () => {
       mounted = false
       clearTimeout(timeoutId)
     }
   }, [params.id])
+
+  // Query Supermemory for cross-session recall (non-blocking)
+  useEffect(() => {
+    if (!paper?.title) return
+    fetch('/api/prerequisite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paragraph: paper.title, paperTitle: paper.title, mode: 'recall' }),
+    }).catch(() => {/* skip */})
+
+    // Directly query supermemory for related papers
+    ;(async () => {
+      try {
+        const res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: `related:${paper.title}`, recallOnly: true }),
+        })
+        if (res.ok) {
+          const data = await res.json() as { memories?: SupermemoryResult[] }
+          if (data.memories && data.memories.length > 0) {
+            setRelatedMemories(data.memories)
+          }
+        }
+      } catch {
+        // Supermemory unavailable — silently skip
+      }
+    })()
+  }, [paper?.title])
 
   const sections = paper?.sections || []
 
@@ -124,6 +172,41 @@ export default function PaperPage() {
     onShowHelp: () => setShowHelp(v => !v),
   })
 
+  const handleDiscoverRelated = async () => {
+    if (!paper?.title || discoverLoading) return
+    setDiscoverLoading(true)
+    setDiscoveredArticles([])
+    setArticleAnalysis(null)
+    try {
+      // Step 1: Discover articles
+      const discoverRes = await fetch('/api/browser-use', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: paper.title, maxResults: 15 }),
+      })
+      if (!discoverRes.ok) throw new Error('Discovery failed')
+      const { articles } = await discoverRes.json() as { articles: DiscoveredArticle[] }
+      setDiscoveredArticles(articles)
+
+      // Step 2: Analyze with Claude
+      if (articles.length > 0) {
+        const analyzeRes = await fetch('/api/analyze-articles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ articles, topic: paper.title }),
+        })
+        if (analyzeRes.ok) {
+          const { analysis } = await analyzeRes.json() as { analysis: ArticleAnalysis }
+          setArticleAnalysis(analysis)
+        }
+      }
+    } catch (e) {
+      console.warn('Discover related failed:', e)
+    } finally {
+      setDiscoverLoading(false)
+    }
+  }
+
   const handleCitationClick = (citation: Citation) => {
     const item: RabbitHoleItem = {
       id: citation.id,
@@ -138,10 +221,10 @@ export default function PaperPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0e14' }}>
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="animate-spin text-4xl mb-4">⟳</div>
-          <p style={{ color: '#9ca3af' }}>Loading paper...</p>
+          <p className="text-text-muted">Loading paper...</p>
         </div>
       </div>
     )
@@ -149,13 +232,12 @@ export default function PaperPage() {
 
   if (!paper) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0e14' }}>
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <p className="text-xl mb-4" style={{ color: '#e8e0d0' }}>Paper not found</p>
+          <p className="text-xl mb-4 text-text">Paper not found</p>
           <button
             onClick={() => router.push('/')}
-            className="px-4 py-2 rounded"
-            style={{ backgroundColor: '#00d4aa', color: '#0a0e14' }}
+            className="px-4 py-2 rounded bg-teal text-background"
           >
             Back to search
           </button>
@@ -170,7 +252,7 @@ export default function PaperPage() {
     : sections
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#0a0e14' }}>
+    <div className="min-h-screen bg-background">
       {/* MathJax */}
       <script
         dangerouslySetInnerHTML={{
@@ -231,13 +313,10 @@ export default function PaperPage() {
 
       {/* Citation Graph Overlay */}
       {showCitationGraph && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col"
-          style={{ backgroundColor: 'rgba(10, 14, 20, 0.97)' }}
-        >
-          <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #1a2235' }}>
+        <div className="fixed inset-0 z-50 flex flex-col bg-background/95">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-surface-2">
             <div className="flex items-center gap-4">
-              <h2 className="font-display" style={{ color: '#e8e0d0', fontFamily: 'Syne, sans-serif' }}>
+              <h2 className="font-display text-text" style={{ fontFamily: 'Syne, sans-serif' }}>
                 Citation Graph
               </h2>
               <div className="flex gap-1">
@@ -245,11 +324,7 @@ export default function PaperPage() {
                   <button
                     key={f}
                     onClick={() => setCitationFilter(f)}
-                    className="text-xs px-2.5 py-1 rounded transition-all capitalize"
-                    style={{
-                      backgroundColor: citationFilter === f ? '#00d4aa' : '#1a2235',
-                      color: citationFilter === f ? '#0a0e14' : '#9ca3af',
-                    }}
+                    className={`text-xs px-2.5 py-1 rounded transition-all capitalize ${citationFilter === f ? 'bg-teal text-background' : 'bg-surface-2 text-text-muted'}`}
                   >
                     {f}
                   </button>
@@ -258,8 +333,7 @@ export default function PaperPage() {
             </div>
             <button
               onClick={() => setShowCitationGraph(false)}
-              className="px-3 py-1.5 rounded text-sm"
-              style={{ backgroundColor: '#1a2235', color: '#9ca3af' }}
+              className="px-3 py-1.5 rounded text-sm bg-surface-2 text-text-muted"
             >
               Close (C)
             </button>
@@ -281,8 +355,7 @@ export default function PaperPage() {
         <div className="mb-6 flex items-center justify-between">
           <button
             onClick={() => router.push('/')}
-            className="flex items-center gap-2 text-sm transition-all"
-            style={{ color: '#9ca3af' }}
+            className="flex items-center gap-2 text-sm transition-all text-text-muted"
           >
             ← Back to search
           </button>
@@ -290,10 +363,7 @@ export default function PaperPage() {
             <div className="flex items-center gap-2">
               <SignedOut>
                 <SignInButton mode="modal">
-                  <button
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                    style={{ backgroundColor: '#00d4aa', color: '#0a0e14' }}
-                  >
+                  <button className="px-3 py-1.5 rounded-lg text-xs font-medium bg-teal text-background">
                     Sign in
                   </button>
                 </SignInButton>
@@ -305,6 +375,13 @@ export default function PaperPage() {
           )}
         </div>
 
+        {/* Previously read indicator */}
+        {relatedMemories.length > 0 && (
+          <div className="mb-4 px-3 py-2 rounded border border-teal/30 bg-teal/5 text-xs text-teal">
+            📚 You&apos;ve explored {relatedMemories.length} related paper{relatedMemories.length > 1 ? 's' : ''} before
+          </div>
+        )}
+
         <HeaderZone
           paper={paper}
           readingMode={readingMode}
@@ -315,34 +392,37 @@ export default function PaperPage() {
         <div className="flex items-center gap-2 mb-8 flex-wrap">
           <button
             onClick={() => setShowCitationGraph(true)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all"
-            style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all bg-surface text-text-muted border border-surface-2"
             title="Citation graph (C)"
           >
             ⬡ Citations
           </button>
           <button
             onClick={() => setShowNotebook(true)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all"
-            style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all bg-surface text-text-muted border border-surface-2"
             title="Notebook (N)"
           >
             ⌥ Notebook
           </button>
           <button
             onClick={() => setShowGlossary(true)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all"
-            style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all bg-surface text-text-muted border border-surface-2"
           >
             Ω Glossary
           </button>
           <button
             onClick={() => setShowHelp(true)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all"
-            style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all bg-surface text-text-muted border border-surface-2"
             title="Keyboard shortcuts (?)"
           >
             ? Shortcuts
+          </button>
+          <button
+            onClick={handleDiscoverRelated}
+            disabled={discoverLoading}
+            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all bg-surface border border-surface-2 disabled:opacity-50 ${discoverLoading ? 'text-text-muted' : 'text-amber'}`}
+          >
+            {discoverLoading ? <><span className="animate-spin">⟳</span> Discovering...</> : '🔍 Discover Related'}
           </button>
         </div>
 
@@ -353,6 +433,7 @@ export default function PaperPage() {
             section={section}
             variables={paper.variables || []}
             equations={paper.equations || []}
+            figures={paper.figures || []}
             paperTitle={paper.title}
             readingMode={readingMode}
             onEquationExpand={() => recordAction('expandedEquation')}
@@ -361,25 +442,120 @@ export default function PaperPage() {
           />
         ))}
 
+        {/* Discover Related Papers results */}
+        {(discoveredArticles.length > 0 || articleAnalysis) && (
+          <section className="mt-12 pt-8 border-t border-surface-2">
+            <h2 className="text-xl font-display text-text mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>
+              🔍 Related Papers
+            </h2>
+
+            {articleAnalysis && (
+              <div className="mb-6 p-4 rounded-lg bg-surface border border-surface-2">
+                <p className="text-sm text-text-muted mb-3 font-serif leading-relaxed">{articleAnalysis.summary}</p>
+                {articleAnalysis.synthesis && (
+                  <p className="text-sm text-text font-serif leading-relaxed">{articleAnalysis.synthesis}</p>
+                )}
+              </div>
+            )}
+
+            {articleAnalysis?.mostRelevant && articleAnalysis.mostRelevant.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-sm font-display uppercase tracking-wider text-teal mb-3">Most Relevant</h3>
+                <div className="space-y-3">
+                  {articleAnalysis.mostRelevant.map((a, i) => (
+                    <div key={i} className="p-3 rounded bg-surface border border-surface-2">
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-teal hover:underline"
+                      >
+                        {a.title}
+                      </a>
+                      <p className="text-xs text-text-muted mt-1">{a.reason}</p>
+                      {a.keyFindings.length > 0 && (
+                        <ul className="mt-2 space-y-0.5">
+                          {a.keyFindings.map((f, j) => (
+                            <li key={j} className="text-xs text-text-muted">• {f}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {articleAnalysis?.researchBrief && (
+              <div className="mb-6 p-4 rounded-lg bg-surface border border-amber/20">
+                <h3 className="text-sm font-display uppercase tracking-wider text-amber mb-2">Research Brief</h3>
+                <p className="text-sm text-text font-serif leading-relaxed whitespace-pre-line">
+                  {articleAnalysis.researchBrief}
+                </p>
+              </div>
+            )}
+
+            {discoveredArticles.length > 0 && (
+              <div>
+                <h3 className="text-sm font-display uppercase tracking-wider text-text-muted mb-3">
+                  All Discovered ({discoveredArticles.length})
+                </h3>
+                <div className="space-y-2">
+                  {discoveredArticles.map((a, i) => (
+                    <div key={i} className="flex items-start gap-3 p-2 rounded hover:bg-surface transition-colors">
+                      <span className="text-xs text-text-muted font-mono mt-0.5 w-6 shrink-0">{i + 1}</span>
+                      <div className="min-w-0">
+                        <a
+                          href={a.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-text hover:text-teal transition-colors"
+                        >
+                          {a.title}
+                        </a>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-text-muted">{a.source}</span>
+                          {a.year && <span className="text-xs text-text-muted">{a.year}</span>}
+                          {a.citation_count != null && (
+                            <span className="text-xs text-text-muted">{a.citation_count.toLocaleString()} citations</span>
+                          )}
+                          {a.pdf_url && (
+                            <a
+                              href={a.pdf_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-teal hover:underline"
+                            >
+                              PDF ↗
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
         {/* Section navigation */}
         {sections.length > 1 && (
           <div className="sticky bottom-6 flex justify-center gap-2 mt-8">
             <button
               onClick={() => scrollToSection(currentSectionIndex - 1)}
               disabled={currentSectionIndex === 0}
-              className="px-4 py-2 rounded-lg text-sm"
-              style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
+              className="px-4 py-2 rounded-lg text-sm bg-surface text-text-muted border border-surface-2 disabled:opacity-40"
             >
               ↑ Prev (K)
             </button>
-            <span className="px-3 py-2 text-xs font-mono" style={{ color: '#9ca3af' }}>
+            <span className="px-3 py-2 text-xs font-mono text-text-muted">
               {currentSectionIndex + 1} / {sections.length}
             </span>
             <button
               onClick={() => scrollToSection(currentSectionIndex + 1)}
               disabled={currentSectionIndex === sections.length - 1}
-              className="px-4 py-2 rounded-lg text-sm"
-              style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
+              className="px-4 py-2 rounded-lg text-sm bg-surface text-text-muted border border-surface-2 disabled:opacity-40"
             >
               ↓ Next (J)
             </button>
