@@ -8,7 +8,7 @@ export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   try {
-    const { paper, action } = await request.json() as { paper: PaperMetadata; action: 'create' | 'get' }
+    const { paper, action } = await request.json() as { paper: PaperMetadata & { sections?: Array<{ id: string; title: string }> }; action: 'create' | 'get' }
 
     if (!paper || !paper.id) {
       return NextResponse.json({ error: 'Paper data is required' }, { status: 400 })
@@ -19,10 +19,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: 'pending', cells: [] })
     }
 
+    const paperSections: Array<{ id: string; title: string }> = paper.sections || []
+
     // Generate notebook cells with Claude
     let cells
     if (process.env.ANTHROPIC_API_KEY) {
-      cells = await generateNotebookCells(paper.title, [], undefined)
+      cells = await generateNotebookCells(paper.title, paperSections, undefined)
+
+      // Ensure every section has at least one code cell
+      const coveredSections = new Set(cells.filter(c => c.type === 'code').map(c => c.sectionId))
+      let cellIdx = cells.length + 1
+      for (const sec of paperSections) {
+        if (!coveredSections.has(sec.id)) {
+          cells.push({
+            id: `nb-auto-${cellIdx++}`,
+            type: 'code' as const,
+            content: `import numpy as np\n# Interactive code for this section\nprint("Section loaded")`,
+            sectionId: sec.id,
+            isEditable: true,
+          })
+        }
+      }
     } else {
       // Demo fallback cells
       cells = [

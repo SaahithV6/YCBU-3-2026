@@ -439,6 +439,7 @@ export default function PaperPage() {
             onEquationExpand={() => recordAction('expandedEquation')}
             onVariableHover={() => recordAction('hoveredVariable')}
             evidenceChains={i === visibleSections.length - 1 ? paper.evidenceChains : []}
+            notebookCells={(paper.notebookCells || []).filter(c => c.sectionId === section.id)}
           />
         ))}
 
