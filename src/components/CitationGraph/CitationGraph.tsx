@@ -112,8 +112,23 @@ export default function CitationGraph({ citations, paperTitle, onCitationClick, 
           .attr('font-family', 'IBM Plex Serif, serif')
 
         node.on('click', (_event: MouseEvent, d: NodeDatum) => {
-          if (d.type !== 'current' && 'citation' in d && d.citation && onCitationClick) {
-            onCitationClick(d.citation as Citation)
+          if (d.type !== 'current' && 'citation' in d && d.citation) {
+            const c = d.citation as Citation
+            const rawUrl = c.url || (c.arxivId ? `https://arxiv.org/abs/${c.arxivId}` : undefined)
+            if (rawUrl) {
+              // Only allow http/https URLs to prevent XSS via javascript: or other protocols
+              try {
+                const parsed = new URL(rawUrl)
+                if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+                  window.open(rawUrl, '_blank', 'noopener,noreferrer')
+                }
+              } catch {
+                // Ignore malformed URLs
+              }
+            }
+            if (onCitationClick) {
+              onCitationClick(c)
+            }
           }
         })
 

@@ -66,6 +66,7 @@ export interface Citation {
   authors: string[]
   year?: number
   arxivId?: string
+  url?: string
   isFoundational: boolean
 }
 

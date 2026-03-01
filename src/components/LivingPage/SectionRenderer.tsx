@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Section, Variable, Equation, ReadingMode, EvidenceChain as EvidenceChainType, Figure } from '@/lib/types'
+import { Section, Variable, Equation, ReadingMode, EvidenceChain as EvidenceChainType, Figure, NotebookCell as NotebookCellType } from '@/lib/types'
 import EquationRenderer from './EquationRenderer'
 import FigureViewer from './FigureViewer'
 import DontUnderstandButton from './DontUnderstandButton'
 import VariableHoverCard from './VariableHoverCard'
 import EvidenceChain from './EvidenceChain'
 import ProgressiveReveal from './ProgressiveReveal'
+import InlineDemoSection from '@/components/Notebook/InlineDemoSection'
 
 interface SectionRendererProps {
   section: Section
@@ -19,6 +20,8 @@ interface SectionRendererProps {
   onEquationExpand?: () => void
   onVariableHover?: () => void
   evidenceChains?: EvidenceChainType[]
+  notebookCells?: NotebookCellType[]
+  onOpenNotebook?: () => void
 }
 
 function highlightVariables(text: string, variables: Variable[], onHover?: () => void): React.ReactNode[] {
@@ -79,6 +82,8 @@ export default function SectionRenderer({
   onEquationExpand,
   onVariableHover,
   evidenceChains = [],
+  notebookCells = [],
+  onOpenNotebook,
 }: SectionRendererProps) {
   const [activeParagraph, setActiveParagraph] = useState<number | null>(null)
 
@@ -145,6 +150,17 @@ export default function SectionRenderer({
           {evidenceChains.map((chain, i) => (
             <EvidenceChain key={i} chain={chain} />
           ))}
+        </ProgressiveReveal>
+      )}
+
+      {/* Inline notebook demos for this section */}
+      {notebookCells.length > 0 && (
+        <ProgressiveReveal delay={500}>
+          <InlineDemoSection
+            cells={notebookCells}
+            sectionId={section.id}
+            onOpenInNotebook={onOpenNotebook}
+          />
         </ProgressiveReveal>
       )}
     </section>
