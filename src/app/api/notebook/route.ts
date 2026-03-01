@@ -83,7 +83,7 @@ print(f"Configuration: lr={learning_rate}, hidden={hidden_dims}, sparsity={spars
     let daytonaWorkspaceId
     if (process.env.DAYTONA_API_KEY) {
       try {
-        const repoUrl = 'githubRepos' in paper ? (paper as any).githubRepos?.[0]?.url : undefined
+        const repoUrl = 'githubRepos' in paper ? (paper as ProcessedPaper & { id?: string; githubRepos?: Array<{ url: string }> }).githubRepos?.[0]?.url : undefined
         const workspace = await createWorkspace(repoUrl)
         sandboxUrl = workspace.url
         daytonaWorkspaceId = workspace.id

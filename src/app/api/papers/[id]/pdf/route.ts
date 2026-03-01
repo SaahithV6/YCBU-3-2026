@@ -70,7 +70,7 @@ export async function GET(
     const safeFilename = `${slug || 'paper'}.pdf`
     const encodedFilename = encodeURIComponent(safeFilename)
 
-    return new NextResponse(result.buffer, {
+    return new NextResponse(new Uint8Array(result.buffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `inline; filename="${safeFilename}"; filename*=UTF-8''${encodedFilename}`,
