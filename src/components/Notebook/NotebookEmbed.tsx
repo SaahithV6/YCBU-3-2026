@@ -25,6 +25,12 @@ export default function NotebookEmbed({ paper, isOpen, onClose, onCellRun }: Not
   useEffect(() => {
     if (!isOpen || notebook) return
 
+    // Use pre-generated notebook cells if they include code cells
+    if (paper.notebookCells && paper.notebookCells.some(c => c.type === 'code')) {
+      setNotebook({ cells: paper.notebookCells, status: 'cells-only' })
+      return
+    }
+
     const createNotebook = async () => {
       setIsLoading(true)
       try {

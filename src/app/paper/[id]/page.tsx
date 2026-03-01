@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ProcessedPaper, ReadingMode, Citation, RabbitHoleItem } from '@/lib/types'
+import { ProcessedPaper, ReadingMode, Citation, RabbitHoleItem, ConceptMapNode } from '@/lib/types'
 import HeaderZone from '@/components/LivingPage/HeaderZone'
 import SectionRenderer from '@/components/LivingPage/SectionRenderer'
 import DepthMeter from '@/components/LivingPage/DepthMeter'
@@ -12,6 +12,7 @@ import RabbitHoleStack from '@/components/RabbitHole/RabbitHoleStack'
 import RabbitHolePanel from '@/components/RabbitHole/RabbitHolePanel'
 import GlossarySidebar from '@/components/Glossary/GlossarySidebar'
 import KeyboardShortcuts from '@/components/Navigation/KeyboardShortcuts'
+import ConceptMap from '@/components/ConceptMap/ConceptMap'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useDepthMeter } from '@/hooks/useDepthMeter'
 import { useRabbitHole } from '@/hooks/useRabbitHole'
@@ -43,6 +44,7 @@ export default function PaperPage() {
   const [discoverLoading, setDiscoverLoading] = useState(false)
   const [discoveredArticles, setDiscoveredArticles] = useState<DiscoveredArticle[]>([])
   const [articleAnalysis, setArticleAnalysis] = useState<ArticleAnalysis | null>(null)
+  const [conceptMapNodes, setConceptMapNodes] = useState<ConceptMapNode[]>([])
   const sectionRefs = useRef<HTMLElement[]>([])
 
   const { depth, recordAction } = useDepthMeter()
@@ -125,6 +127,22 @@ export default function PaperPage() {
       }
     })()
   }, [paper?.title])
+
+  // Build concept map nodes from paper data
+  useEffect(() => {
+    if (!paper) return
+    const paperId = (paper as ProcessedPaper & { id?: string }).id || paper.title
+    const nodes: ConceptMapNode[] = [
+      { id: paperId, label: paper.title, type: 'paper' },
+      ...(paper.variables || []).map(v => ({
+        id: `var:${v.symbol}`,
+        label: `${v.symbol}: ${v.name}`,
+        type: 'variable' as const,
+        sectionId: v.firstSeenSectionId,
+      })),
+    ]
+    setConceptMapNodes(nodes)
+  }, [paper])
 
   const sections = paper?.sections || []
 
@@ -217,6 +235,12 @@ export default function PaperPage() {
     pushRabbitHole(item)
     setShowRabbitHolePanel(true)
     recordAction('clickedCitation')
+
+    // Grow concept map with this citation as a rabbit hole node
+    setConceptMapNodes(prev => {
+      if (prev.some(n => n.id === `rh:${citation.id}`)) return prev
+      return [...prev, { id: `rh:${citation.id}`, label: citation.title, type: 'rabbithole' as const }]
+    })
   }
 
   if (isLoading) {
@@ -539,6 +563,41 @@ export default function PaperPage() {
           </section>
         )}
 
+        {/* Citations section */}
+        {paper.citations && paper.citations.length > 0 && (
+          <section className="mt-12 pt-8 border-t border-surface-2">
+            <h2 className="text-xl font-display text-text mb-4" style={{ fontFamily: 'Syne, sans-serif' }}>
+              References
+            </h2>
+            <div className="space-y-3">
+              {paper.citations.map((citation) => (
+                <div
+                  key={citation.id}
+                  className={`p-3 rounded border transition-colors ${citation.isFoundational ? 'border-amber/30 bg-amber/5' : 'border-surface-2 bg-surface'}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className={`text-sm font-medium ${citation.isFoundational ? 'text-amber' : 'text-text'}`}>
+                        {citation.title}
+                      </p>
+                      <p className="text-xs text-text-muted mt-0.5">
+                        {citation.authors.slice(0, 3).join(', ')}{citation.authors.length > 3 ? ' et al.' : ''}{citation.year ? ` · ${citation.year}` : ''}
+                        {citation.isFoundational && <span className="ml-2 text-amber">★ Foundational</span>}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleCitationClick(citation)}
+                      className="shrink-0 text-xs px-2 py-1 rounded bg-surface-2 text-text-muted hover:text-teal transition-colors"
+                    >
+                      View
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Section navigation */}
         {sections.length > 1 && (
           <div className="sticky bottom-6 flex justify-center gap-2 mt-8">
@@ -562,6 +621,17 @@ export default function PaperPage() {
           </div>
         )}
       </main>
+
+      {/* Concept Map — ambient growing widget */}
+      <ConceptMap
+        nodes={conceptMapNodes}
+        onNodeClick={(node) => {
+          if (node.sectionId) {
+            const el = document.getElementById(node.sectionId)
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+        }}
+      />
 
       {/* Depth Meter */}
       <DepthMeter depth={depth} />
