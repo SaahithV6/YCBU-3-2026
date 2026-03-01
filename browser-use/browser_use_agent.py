@@ -10,14 +10,24 @@ Output: JSON array of discovered articles to stdout, errors/logs to stderr.
 
 import argparse
 import json
+import os
 import sys
 import time
 import re
+from pathlib import Path
 from typing import Optional
 import urllib.request
 import urllib.parse
 import urllib.error
 import xml.etree.ElementTree as ET
+
+try:
+    from dotenv import load_dotenv
+    env_path = Path(__file__).resolve().parent.parent / ".env.local"
+    if env_path.exists():
+        load_dotenv(env_path)
+except ImportError:
+    pass  # dotenv not installed, rely on environment variables
 
 
 def log(msg: str) -> None:
@@ -185,6 +195,64 @@ def search_pubmed(query: str, max_results: int = 5) -> list[dict]:
     return articles
 
 
+def search_browser_use_cloud(query: str, max_results: int) -> Optional[list[dict]]:
+    """
+    Use the Browser Use Cloud SDK to search the web for books and resources.
+    Requires BROWSER_USE_API_KEY in the environment.
+    """
+    api_key = os.environ.get("BROWSER_USE_API_KEY")
+    if not api_key:
+        log("[BrowserUseCloud] BROWSER_USE_API_KEY not set, skipping")
+        return None
+
+    try:
+        from browser_use_sdk import AsyncBrowserUse  # type: ignore
+        import asyncio
+
+        async def run_cloud() -> list[dict]:
+            client = AsyncBrowserUse(api_key=api_key)
+            task = (
+                f'Search the web for books and resources about: "{query}". '
+                f'Visit sites like Google Books, Amazon Books, Goodreads, and general search. '
+                f'For each result collect: title, authors, description/abstract, URL, year, and source name. '
+                f'Return ONLY a JSON array with up to {max_results} items, each having fields: '
+                f'title, authors (list), abstract, url, year, source.'
+            )
+            log(f"[BrowserUseCloud] running task for query: {query!r}")
+            result = await client.run(task)
+            text = result.output or ""
+            match = re.search(r"\[[\s\S]*\]", text)
+            if match:
+                try:
+                    return json.loads(match.group(0))
+                except json.JSONDecodeError as e:
+                    log(f"[BrowserUseCloud] JSON parse error: {e}")
+            return []
+
+        results = asyncio.run(run_cloud())
+        mapped = []
+        for r in results:
+            mapped.append({
+                "source": r.get("source") or "Browser Use Cloud",
+                "title": r.get("title", ""),
+                "abstract": r.get("abstract") or r.get("description", ""),
+                "authors": r.get("authors") or [],
+                "url": r.get("url", ""),
+                "pdf_url": "",
+                "arxiv_id": "",
+                "year": str(r.get("year") or ""),
+                "citation_count": None,
+            })
+        log(f"[BrowserUseCloud] got {len(mapped)} results")
+        return mapped if mapped else None
+    except ImportError:
+        log("[BrowserUseCloud] browser-use-sdk not installed, skipping")
+        return None
+    except Exception as exc:
+        log(f"[BrowserUseCloud] error (non-fatal): {exc}")
+        return None
+
+
 def try_browser_use(query: str, max_results: int) -> Optional[list[dict]]:
     """
     Attempt to use the browser-use library for richer scraping (Google Scholar etc.).
@@ -215,7 +283,7 @@ def try_browser_use(query: str, max_results: int) -> Optional[list[dict]]:
             r.setdefault("source", "Google Scholar (Browser Use)")
         return results
     except ImportError:
-        log("[BrowserUse] library not installed, skipping")
+        log("[BrowserUse] local library not installed, skipping fallback")
         return None
     except Exception as exc:
         log(f"[BrowserUse] error (non-fatal): {exc}")
@@ -248,10 +316,15 @@ def discover_articles(query: str, max_results: int = 20) -> list[dict]:
 
     all_articles: list[dict] = []
 
-    # Try browser-use first (richest results)
-    bu_results = try_browser_use(query, per_source)
-    if bu_results:
-        all_articles.extend(bu_results)
+    # Try Browser Use Cloud first (uses BROWSER_USE_API_KEY)
+    cloud_results = search_browser_use_cloud(query, per_source)
+    if cloud_results:
+        all_articles.extend(cloud_results)
+    else:
+        # Fall back to local browser-use library
+        bu_results = try_browser_use(query, per_source)
+        if bu_results:
+            all_articles.extend(bu_results)
 
     # Always hit the free APIs
     all_articles.extend(search_arxiv(query, per_source))
