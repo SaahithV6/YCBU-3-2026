@@ -35,10 +35,14 @@ export async function POST(request: NextRequest) {
         source = 'browser-use'
       } catch (e) {
         console.warn('Browser Use failed, falling back to arXiv:', e)
-        papers = await searchArxiv(query, 15)
+        source = 'arxiv'
       }
-    } else {
+    }
+
+    // Fall back to arXiv when Browser Use is unavailable, errors, or returns no results
+    if (!papers || papers.length === 0) {
       papers = await searchArxiv(query, 15)
+      source = 'arxiv'
     }
 
     return NextResponse.json({ papers, source })
