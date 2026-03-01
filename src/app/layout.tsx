@@ -1,18 +1,13 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import dynamic from 'next/dynamic'
-import { ReactNode } from 'react'
-
-const ConvexClientProvider = dynamic(() => import('@/components/ConvexProvider'), {
-  ssr: false,
-})
+import ConvexClientProvider from '@/components/ConvexProvider'
 
 export const metadata: Metadata = {
   title: 'Living Papers v2',
   description: 'Web agent-powered research intelligence platform',
 }
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>

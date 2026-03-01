@@ -1,12 +1,17 @@
 'use client'
 
 import { ConvexProvider, ConvexReactClient } from 'convex/react'
-import { ReactNode } from 'react'
-
-const convex = new ConvexReactClient(
-  process.env.NEXT_PUBLIC_CONVEX_URL || 'https://placeholder.convex.cloud'
-)
+import { ReactNode, useState, useEffect } from 'react'
 
 export default function ConvexClientProvider({ children }: { children: ReactNode }) {
+  const [convex, setConvex] = useState<ConvexReactClient | null>(null)
+
+  useEffect(() => {
+    setConvex(new ConvexReactClient(
+      process.env.NEXT_PUBLIC_CONVEX_URL || 'https://placeholder.convex.cloud'
+    ))
+  }, [])
+
+  if (!convex) return <>{children}</>
   return <ConvexProvider client={convex}>{children}</ConvexProvider>
 }

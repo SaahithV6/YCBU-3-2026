@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['convex']
-  },
+  serverExternalPackages: ['convex'],
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'arxiv.org' },
