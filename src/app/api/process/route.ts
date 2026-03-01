@@ -67,6 +67,8 @@ export async function POST(request: NextRequest) {
       paperId,
       status: 'ready',
       paper: {
+        id: paperId,
+        status: 'ready',
         title,
         authors: authors || [],
         pdfUrl,

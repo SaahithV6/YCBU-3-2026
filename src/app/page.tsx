@@ -84,7 +84,7 @@ export default function HomePage() {
         if (!response.ok) throw new Error('Processing failed')
 
         const data = await response.json()
-        const processedPaper: ProcessedPaper = data.paper
+        const processedPaper: ProcessedPaper = { ...data.paper, id: paper.id }
 
         // Store in sessionStorage for the paper page to pick up
         try {
