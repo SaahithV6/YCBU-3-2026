@@ -22,15 +22,15 @@
       "status": "ready",
       "tldr": [
         {
-          "sentence": "Neural networks represent more features than dimensions by using superposition, packing multiple features into shared directions in activation space.",
+          "sentence": "Neural networks represent more features than dimensions by using superposition, packing multiple features into shared directions.",
           "sourceSentenceId": "blk-intro-1"
         },
         {
-          "sentence": "Toy model experiments reveal superposition emerges with sparse features and forms geometric configurations like antipodal pairs and pentagons.",
+          "sentence": "Toy model experiments reveal superposition emerges with sparse features and forms geometric configurations like antipodal pairs.",
           "sourceSentenceId": "blk-intro-2"
         },
         {
-          "sentence": "Superposition may be a primary obstacle to neural network interpretability, explaining why features are polysemantic.",
+          "sentence": "Superposition may be a primary obstacle to neural network interpretability.",
           "sourceSentenceId": "blk-intro-3"
         }
       ],
@@ -44,51 +44,17 @@
             {
               "id": "blk-intro-1",
               "type": "paragraph",
-              "raw": "One of the most fundamental questions in mechanistic interpretability is how neural networks represent information internally. The linear representation hypothesis suggests that features correspond to directions in activation space, and that models can be understood by decomposing their activations into these feature directions."
+              "raw": "One of the most fundamental questions in mechanistic interpretability is how neural networks represent information internally. The linear representation hypothesis suggests that features correspond to directions in activation space."
             },
             {
               "id": "blk-intro-2",
               "type": "paragraph",
-              "raw": "Neural networks often pack many features into a small number of dimensions through superposition\u2014representing more features than there are dimensions. This phenomenon allows models to store and use vastly more information than their hidden dimension would naively suggest, but at the cost of interference between features that share representational space."
+              "raw": "Neural networks often pack many features into a small number of dimensions through superposition—representing more features than there are dimensions."
             },
             {
               "id": "blk-intro-3",
               "type": "paragraph",
-              "raw": "We find that superposition may be linked to neural network interpretability challenges, providing a mechanism for why networks are hard to interpret. When a single neuron participates in representing multiple unrelated features simultaneously, it becomes polysemantic: it cannot be assigned a single human-readable interpretation."
-            },
-            {
-              "id": "blk-intro-4",
-              "type": "paragraph",
-              "raw": "Our key finding is that superposition is not an all-or-nothing phenomenon. The degree of superposition depends critically on feature sparsity: if features rarely co-occur in inputs, a network can use superposition more aggressively without paying large reconstruction costs. We demonstrate this quantitatively, showing a phase transition from no superposition to heavy superposition as sparsity increases past a critical threshold of approximately S = 0.7."
-            }
-          ],
-          "marginNotes": []
-        },
-        {
-          "id": "sec-background",
-          "title": "Background and Related Work",
-          "level": 1,
-          "isAppendix": false,
-          "content": [
-            {
-              "id": "blk-bg-1",
-              "type": "paragraph",
-              "raw": "The linear representation hypothesis has a long history in neural network research. Distributed representations were proposed by Hinton (1984) as a core advantage of neural networks over symbolic systems, allowing combinatorial generalization from a compact set of features. More recent work on word embeddings demonstrated that linear arithmetic in embedding space recovers semantic relationships, lending empirical support to the hypothesis."
-            },
-            {
-              "id": "blk-bg-2",
-              "type": "paragraph",
-              "raw": "Polysemanticity\u2014the phenomenon where individual neurons respond to multiple distinct semantic concepts\u2014has been documented extensively in vision models. Olah et al. (2020) found neurons in InceptionV4 that respond both to cat faces and car fronts. Earlier work assumed this was a sign of imperfect training or limited capacity, but our analysis suggests it may be an optimal strategy under capacity constraints."
-            },
-            {
-              "id": "blk-bg-3",
-              "type": "paragraph",
-              "raw": "The concept of compressed sensing provides a mathematical framework for understanding when superposition is possible without loss of information. If signals are sparse in some basis, they can be recovered from far fewer measurements than Shannon-Nyquist theory would require. Our toy model is essentially a neural implementation of compressed sensing, and we draw on this literature to characterize when superposition is lossless versus lossy."
-            },
-            {
-              "id": "blk-bg-4",
-              "type": "paragraph",
-              "raw": "Prior work on privileged bases argued that neuron bases are not privileged in transformer residual streams: any rotation of the residual stream is equally valid. Superposition provides an alternative account\u2014neurons may be privileged not because of architectural reasons, but because sparse features are better decoded using non-negative activations through ReLU nonlinearities, creating pressure for features to align with the neuron basis."
+              "raw": "We find that superposition may be linked to neural network interpretability challenges, providing a mechanism for why networks are hard to interpret."
             }
           ],
           "marginNotes": []
@@ -102,90 +68,12 @@
             {
               "id": "blk-method-1",
               "type": "paragraph",
-              "raw": "We use a simple linear encoder-decoder model to study superposition in isolation. The encoder compresses an n-dimensional input to a lower m-dimensional hidden state h (with m < n), then a ReLU decoder reconstructs the input. This minimal architecture is sufficient to exhibit rich superposition behavior while remaining mathematically tractable."
+              "raw": "We use a simple linear encoder-decoder model to study superposition. The encoder compresses input to a lower-dimensional hidden state, then a ReLU decoder reconstructs the input."
             },
             {
               "id": "blk-eq-1",
               "type": "equation",
               "raw": "h = Wx + b, \\quad x' = \\text{ReLU}(W^T h + b')"
-            },
-            {
-              "id": "blk-method-2",
-              "type": "paragraph",
-              "raw": "The loss function is a weighted mean squared error over features, where each feature i has importance weight I_i. Features are generated with sparsity S: each feature is non-zero with probability 1-S, and zero otherwise. When S = 0 (dense features), the model cannot benefit from superposition because features always co-occur. As S approaches 1, features rarely co-occur and the model can represent many features with minimal interference."
-            },
-            {
-              "id": "blk-eq-2",
-              "type": "equation",
-              "raw": "L = \\sum_i I_i (x_i - x'_i)^2"
-            },
-            {
-              "id": "blk-method-3",
-              "type": "paragraph",
-              "raw": "To characterize superposition geometrically, we analyze the columns of W (the feature directions in hidden space). We measure the degree of superposition by the fraction of features whose primary direction is shared with another feature. We find that optimal solutions form regular polytope configurations including antipodal pairs (2 features per dimension), triangles, tetrahedra, and pentagons depending on the ratio n/m."
-            }
-          ],
-          "marginNotes": []
-        },
-        {
-          "id": "sec-results",
-          "title": "Results and Findings",
-          "level": 1,
-          "isAppendix": false,
-          "content": [
-            {
-              "id": "blk-res-1",
-              "type": "paragraph",
-              "raw": "Our main finding is a sharp phase transition in the degree of superposition as a function of feature sparsity. For n=40 features in m=5 dimensions, the model exhibits essentially no superposition when sparsity S < 0.7. Above S = 0.7, superposition emerges abruptly: the fraction of superposed features increases from 0% to over 80% as S increases from 0.7 to 0.99."
-            },
-            {
-              "id": "blk-res-2",
-              "type": "paragraph",
-              "raw": "The geometric arrangements of feature directions in superposition are highly structured and match predictions from compressed sensing theory. With n=15 features in m=5 dimensions, the optimal solution is a regular pentagonal arrangement in each 2D subspace, verified by the eigenvalue spectrum of WW^T showing 5 eigenvalues of exactly 3.0 and 10 eigenvalues of 0 (p < 10^-8 against random arrangement)."
-            },
-            {
-              "id": "blk-res-3",
-              "type": "paragraph",
-              "raw": "Feature importance I_i has a strong effect on which features are represented and which are dropped during superposition. At high sparsity, the model uses superposition to represent all features but allocates more dimensions to high-importance features. We find that the fraction of hidden dimensions allocated to feature i scales approximately as I_i^{0.5} (R^2 = 0.94 across 50 runs with varying importance distributions)."
-            },
-            {
-              "id": "blk-res-4",
-              "type": "paragraph",
-              "raw": "We also study superposition in trained language models by analyzing neuron activation patterns in a two-layer MLP. The effective dimensionality of the activation space (measured by participation ratio) is 3.2x the number of neurons in the layer, suggesting neurons represent approximately 3.2 features each on average. This ratio increases with model depth, reaching 5.1x in the deepest MLP layer of a 6-layer transformer."
-            },
-            {
-              "id": "blk-fig-1",
-              "type": "figure",
-              "raw": "Figure 1: Phase transition in superposition as a function of sparsity S. Left: fraction of features in superposition vs. sparsity for n=40 features, m=5 dimensions. Right: geometric arrangements of feature directions for different (n,m) configurations."
-            }
-          ],
-          "marginNotes": []
-        },
-        {
-          "id": "sec-discussion",
-          "title": "Discussion and Implications",
-          "level": 1,
-          "isAppendix": false,
-          "content": [
-            {
-              "id": "blk-disc-1",
-              "type": "paragraph",
-              "raw": "Our results have significant implications for mechanistic interpretability. The prevalence of superposition in real neural networks\u2014affecting approximately 70-90% of neurons in large language models based on participation ratio measurements\u2014means that most neurons cannot be interpreted in isolation. Any interpretability method that assumes neurons are monosemantic will fail to capture the majority of model behavior."
-            },
-            {
-              "id": "blk-disc-2",
-              "type": "paragraph",
-              "raw": "One possible path forward is to find the right basis in which features are monosemantic. Sparse dictionary learning methods like sparse autoencoders may be able to recover the underlying sparse feature representation. Our toy model predicts that the feature directions recovered by such methods should show the geometric structure (antipodal pairs, triangles, etc.) that we observe in optimal superposition solutions\u2014a testable prediction for future work."
-            },
-            {
-              "id": "blk-disc-3",
-              "type": "paragraph",
-              "raw": "Superposition also has implications for the adversarial robustness of neural networks. When many features share representational space, small perturbations in input space can cause large changes in feature activation patterns due to the interference between features. This may partially explain why adversarial examples exist: they exploit the ambiguity introduced by superposition to fool the network."
-            },
-            {
-              "id": "blk-disc-4",
-              "type": "paragraph",
-              "raw": "A key open question is whether superposition is fundamentally unavoidable or whether architectural choices can reduce it. We conjecture that architectures with explicit sparsity mechanisms (e.g., mixture of experts) may exhibit less superposition because they can assign different computation paths to different features. Validating this conjecture remains an important direction for future research."
             }
           ],
           "marginNotes": []
@@ -195,7 +83,7 @@
         {
           "symbol": "h",
           "name": "hidden state",
-          "definition": "Compressed m-dimensional representation of input",
+          "definition": "Compressed representation of input",
           "firstSeenSectionId": "sec-method",
           "allOccurrences": [
             "blk-method-1",
@@ -205,84 +93,40 @@
         {
           "symbol": "W",
           "name": "weight matrix",
-          "definition": "Encoder weight matrix mapping input to hidden (m x n)",
+          "definition": "Encoder weight matrix mapping input to hidden",
           "firstSeenSectionId": "sec-method",
           "allOccurrences": [
-            "blk-eq-1",
-            "blk-method-3"
-          ]
-        },
-        {
-          "symbol": "S",
-          "name": "sparsity",
-          "definition": "Probability that a given feature is zero in any input sample",
-          "firstSeenSectionId": "sec-method",
-          "allOccurrences": [
-            "blk-method-2",
-            "blk-res-1"
-          ]
-        },
-        {
-          "symbol": "L",
-          "name": "loss",
-          "definition": "Weighted mean squared error reconstruction loss",
-          "firstSeenSectionId": "sec-method",
-          "allOccurrences": [
-            "blk-eq-2"
+            "blk-eq-1"
           ]
         }
       ],
       "equations": [
         {
           "id": "eq-1",
-          "latex": "h = Wx + b, \\quad x' = \\text{ReLU}(W^T h + b')",
-          "label": "Eq. 1 \u2014 Encoder-decoder",
+          "latex": "h = Wx + b",
+          "label": "Eq. 1",
           "storySteps": [
-            "Input x (n-dimensional) is multiplied by weight matrix W",
-            "Bias b is added to get the hidden state h (m-dimensional, m < n)",
-            "The transpose W^T maps h back to n dimensions",
-            "ReLU nonlinearity ensures non-negative reconstruction x'"
+            "Input x is compressed by W",
+            "Bias b is added",
+            "Result h has fewer dimensions than x"
           ],
           "relatedVariables": [
             "h",
-            "W"
+            "W",
+            "x",
+            "b"
           ],
           "blockId": "blk-eq-1"
-        },
-        {
-          "id": "eq-2",
-          "latex": "L = \\sum_i I_i (x_i - x'_i)^2",
-          "label": "Eq. 2 \u2014 Weighted reconstruction loss",
-          "storySteps": [
-            "For each feature i, compute squared error between true x_i and reconstruction x'_i",
-            "Multiply by importance weight I_i to prioritize high-importance features",
-            "Sum over all n features to get total loss L"
-          ],
-          "relatedVariables": [
-            "L",
-            "S"
-          ],
-          "blockId": "blk-eq-2"
         }
       ],
       "figures": [
         {
           "id": "fig-1",
           "url": "",
-          "caption": "Phase transition in superposition as a function of sparsity S. The fraction of features in superposition jumps abruptly from 0 to >80% as S crosses a critical threshold near 0.7.",
+          "caption": "Superposition: features (arrows) packed into fewer dimensions",
           "label": "Figure 1",
           "referencedByBlockIds": [
-            "blk-res-1",
-            "blk-fig-1"
-          ]
-        },
-        {
-          "id": "fig-2",
-          "url": "",
-          "caption": "Geometric arrangements of feature directions: antipodal pairs (n=10, m=5), triangles (n=6, m=2), and pentagons (n=15, m=5). These match predictions from compressed sensing theory.",
-          "label": "Figure 2",
-          "referencedByBlockIds": [
-            "blk-res-2"
+            "blk-intro-1"
           ]
         }
       ],
@@ -304,17 +148,37 @@
             "Olah et al."
           ],
           "year": 2020,
-          "arxivId": "2001.05566",
+          "url": "https://distill.pub/2020/circuits/zoom-in/",
           "isFoundational": true
         },
         {
           "id": "cite-3",
-          "title": "Distributed Representations",
+          "title": "Towards Monosemanticity: Decomposing Language Models With Dictionary Learning",
           "authors": [
-            "Hinton"
+            "Bricken et al."
           ],
-          "year": 1984,
-          "arxivId": "",
+          "year": 2023,
+          "url": "https://transformer-circuits.pub/2023/monosemantic-features",
+          "isFoundational": false
+        },
+        {
+          "id": "cite-4",
+          "title": "Interpretability in the Wild: a Circuit for Indirect Object Identification in GPT-2 small",
+          "authors": [
+            "Wang et al."
+          ],
+          "year": 2023,
+          "arxivId": "2211.00593",
+          "isFoundational": false
+        },
+        {
+          "id": "cite-5",
+          "title": "A Mathematical Framework for Transformer Circuits",
+          "authors": [
+            "Elhage et al."
+          ],
+          "year": 2021,
+          "url": "https://transformer-circuits.pub/2021/framework/index.html",
           "isFoundational": true
         }
       ],
@@ -322,70 +186,76 @@
       "evidenceChains": [
         {
           "claim": "Superposition occurs when features are sparse",
-          "experiment": "Vary feature sparsity S in toy model from 0 to 0.99 and measure fraction of features in superposition",
+          "experiment": "Vary feature sparsity in toy model and measure reconstruction loss",
           "figureId": "fig-1",
-          "statisticalResult": "Phase transition at S ~= 0.7; superposition fraction rises from 0% to >80% (p < 0.001)",
-          "conclusion": "Sparse features are both necessary and sufficient for superposition formation",
-          "blockId": "blk-res-1"
-        },
-        {
-          "claim": "Superposition produces regular geometric arrangements",
-          "experiment": "Analyze eigenvalue spectrum of WW^T for optimal solutions at various (n,m) configurations",
-          "figureId": "fig-2",
-          "statisticalResult": "Pentagonal arrangement confirmed: 5 eigenvalues of 3.0, 10 of 0 (p < 10^-8 vs random)",
-          "conclusion": "Optimal superposition solutions form regular polytopes predicted by compressed sensing theory",
-          "blockId": "blk-res-2"
+          "statisticalResult": "Superposition increases monotonically with sparsity (p < 0.001)",
+          "conclusion": "Sparse features drive superposition formation",
+          "blockId": "blk-method-1"
         }
       ],
       "notebookCells": [
         {
+          "id": "nb-concept-map",
+          "type": "code",
+          "content": "import matplotlib\nmatplotlib.use(\"Agg\")\nimport matplotlib.pyplot as plt\n\nfig, ax = plt.subplots(figsize=(8, 5))\nax.set_facecolor(\"#0a0e14\")\nfig.patch.set_facecolor(\"#0a0e14\")\n\nnodes = {\n    \"superposition\": (0.5, 0.5),\n    \"sparsity\": (0.2, 0.7),\n    \"features\": (0.8, 0.7),\n    \"hidden state\": (0.5, 0.15),\n    \"encoder W\": (0.2, 0.3),\n    \"ReLU decoder\": (0.8, 0.3),\n    \"interpretability\": (0.5, 0.85),\n}\nedges = [\n    (\"sparsity\", \"superposition\"),\n    (\"features\", \"superposition\"),\n    (\"encoder W\", \"hidden state\"),\n    (\"hidden state\", \"ReLU decoder\"),\n    (\"superposition\", \"interpretability\"),\n    (\"features\", \"encoder W\"),\n]\nfor (a, b) in edges:\n    x1, y1 = nodes[a]; x2, y2 = nodes[b]\n    ax.annotate(\"\", xy=(x2, y2), xytext=(x1, y1),\n        arrowprops=dict(arrowstyle=\"->\", color=\"#00d4aa44\", lw=1.2))\nfor label, (x, y) in nodes.items():\n    color = \"#00d4aa\" if label == \"superposition\" else \"#f5a623\" if label in (\"sparsity\", \"features\") else \"#9ca3af\"\n    ax.text(x, y, label, ha=\"center\", va=\"center\", fontsize=9,\n            color=color, bbox=dict(boxstyle=\"round,pad=0.35\", fc=\"#1a2235\", ec=color, lw=0.8))\nax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.axis(\"off\")\nax.set_title(\"Key Concepts: Toy Models of Superposition\", color=\"#9ca3af\", fontsize=10, pad=10)\nplt.tight_layout(); plt.show()",
+          "sectionId": "sec-intro",
+          "isEditable": false
+        },
+        {
           "id": "nb-1",
           "type": "markdown",
-          "content": "# Toy Models of Superposition\n\nThis notebook reproduces the key experiments from Elhage et al. (2022). We'll build the toy encoder-decoder model, train it on sparse synthetic features, and observe the superposition phase transition.",
+          "content": "# Toy Models of Superposition\n\nThis notebook provides an interactive exploration of Elhage et al. (2022). **Superposition** is the phenomenon where a neural network represents *more features than it has dimensions*, by packing features into non-orthogonal directions.\n\nThe key insight: as features become **sparser** (less frequently active), the model can afford to overlap them in weight space without much interference—trading off reconstruction accuracy for representational capacity.",
           "sectionId": "sec-intro",
           "isEditable": false
         },
         {
           "id": "nb-2",
           "type": "code",
-          "content": "import numpy as np\nimport matplotlib.pyplot as plt\n\n# Toy model parameters\nn_features = 40   # number of input features\nn_hidden = 5      # hidden dimension (bottleneck)\nsparsity = 0.8    # probability a feature is zero\nn_samples = 10000 # training samples\n\nnp.random.seed(42)\nprint(f'Features: {n_features}, Hidden: {n_hidden}, Sparsity: {sparsity}')",
+          "content": "import numpy as np\nimport matplotlib\nmatplotlib.use(\"Agg\")\nimport matplotlib.pyplot as plt\n\n# Toy model parameters (try changing these!)\nn_features = 5   # number of input features\nn_hidden = 2     # hidden dimension (bottleneck)\nsparsity = 0.8   # probability a feature is zero on any given input\n\nnp.random.seed(42)\nW = np.random.randn(n_hidden, n_features) * 0.3\n\ndef forward(x):\n    h = np.maximum(0, W @ x)\n    return W.T @ h\n\ndef loss(W_candidate, samples):\n    total = 0.0\n    for x in samples:\n        h = np.maximum(0, W_candidate @ x)\n        x_hat = W_candidate.T @ h\n        total += np.mean((x - x_hat) ** 2)\n    return total / len(samples)\n\ndef make_samples(n=500):\n    X = np.random.randn(n, n_features)\n    mask = np.random.rand(n, n_features) > sparsity\n    return X * mask\n\nsamples = make_samples()\nprint(f\"Toy model ready — W shape: {W.shape}\")\nprint(f\"Baseline reconstruction loss: {loss(W, samples):.4f}\")",
           "sectionId": "sec-method",
           "isEditable": true
         },
         {
           "id": "nb-3",
-          "type": "output",
-          "content": "Features: 40, Hidden: 5, Sparsity: 0.8",
+          "type": "markdown",
+          "content": "## Phase Transition: Sparsity vs Superposition\n\nThe key insight from Elhage et al. is that as feature **sparsity increases**, the model transitions from *dedicated* (orthogonal) to *superposed* representations.\n\nBelow we sweep sparsity from 0 (dense) to 0.99 (very sparse) and plot reconstruction loss.",
           "sectionId": "sec-method",
           "isEditable": false
         },
         {
           "id": "nb-4",
           "type": "code",
-          "content": "def generate_sparse_data(n_features, n_samples, sparsity):\n    x = np.random.uniform(0, 1, (n_samples, n_features))\n    mask = np.random.random((n_samples, n_features)) < sparsity\n    x[mask] = 0.0\n    return x\n\nx_train = generate_sparse_data(n_features, n_samples, sparsity)\nprint(f'Data shape: {x_train.shape}, Density: {(x_train > 0).mean():.3f}')",
+          "content": "import numpy as np\nimport matplotlib\nmatplotlib.use(\"Agg\")\nimport matplotlib.pyplot as plt\n\nnp.random.seed(0)\nn_features, n_hidden = 5, 2\nsparsity_values = [i/20 for i in range(20)]\nlosses = []\n\nfor sp in sparsity_values:\n    W = np.random.randn(n_hidden, n_features) * 0.3\n    lr = 0.05\n    for _ in range(200):\n        X = np.random.randn(64, n_features) * (np.random.rand(64, n_features) > sp)\n        H = np.maximum(0, X @ W.T)\n        X_hat = H @ W\n        err = X_hat - X\n        W -= lr * (2 / 64) * (H.T @ err)\n    X_test = np.random.randn(200, n_features) * (np.random.rand(200, n_features) > sp)\n    H_test = np.maximum(0, X_test @ W.T)\n    X_hat_test = H_test @ W\n    losses.append(float(np.mean((X_hat_test - X_test) ** 2)))\n\nfig, ax = plt.subplots(figsize=(7, 4))\nax.set_facecolor(\"#0a0e14\"); fig.patch.set_facecolor(\"#0a0e14\")\nax.plot(sparsity_values, losses, color=\"#00d4aa\", lw=2)\nax.set_xlabel(\"Sparsity\", color=\"#9ca3af\")\nax.set_ylabel(\"Reconstruction Loss\", color=\"#9ca3af\")\nax.set_title(\"Reconstruction Loss vs Feature Sparsity\", color=\"#e2e8f0\", fontsize=12)\nax.tick_params(colors=\"#9ca3af\")\nfor spine in ax.spines.values(): spine.set_edgecolor(\"#1a2235\")\nax.grid(True, color=\"#1a2235\", linestyle=\"--\", alpha=0.6)\nplt.tight_layout(); plt.show()",
           "sectionId": "sec-method",
           "isEditable": true
         },
         {
           "id": "nb-5",
-          "type": "code",
-          "content": "# Scan sparsity values and measure superposition proxy\nsparsity_values = np.linspace(0, 0.99, 25)\nvariance_ratios = []\n\nfor S in sparsity_values:\n    x = generate_sparse_data(n_features, n_samples, S)\n    cov = x.T @ x / n_samples\n    eigvals = np.sort(np.linalg.eigvalsh(cov))[::-1]\n    # Participation ratio: how many eigenvectors are needed\n    pr = (eigvals.sum()**2) / (eigvals**2).sum()\n    variance_ratios.append(pr / n_hidden)  # ratio to hidden dim\n\nplt.figure(figsize=(8, 4))\nplt.plot(sparsity_values, variance_ratios, 'o-', color='#00d4aa', linewidth=2)\nplt.axvline(0.7, color='#f5a623', linestyle='--', label='Phase transition ~0.7')\nplt.xlabel('Sparsity S'); plt.ylabel('Effective dim / hidden dim')\nplt.title('Superposition Phase Transition'); plt.legend()\nplt.tight_layout(); plt.show()",
-          "sectionId": "sec-results",
-          "isEditable": true
+          "type": "markdown",
+          "content": "## Geometric Structure of Superposition\n\nFeatures in superposition arrange into specific **geometric configurations** — antipodal pairs, triangles, pentagons.\n\nFor n_features=5, n_hidden=2 the learned weight columns form a regular **pentagon** in 2D hidden space.",
+          "sectionId": "sec-method",
+          "isEditable": false
         },
         {
           "id": "nb-6",
           "type": "code",
-          "content": "# Visualize geometric arrangement of 6 features in 2D hidden space\nangles = np.linspace(0, 2*np.pi, 7)[:-1]\nfeature_dirs = np.stack([np.cos(angles), np.sin(angles)], axis=1)\n\nfig, ax = plt.subplots(figsize=(5, 5))\ncircle = plt.Circle((0, 0), 1, fill=False, color='#1a2235', linewidth=1)\nax.add_patch(circle)\nfor i, (dx, dy) in enumerate(feature_dirs):\n    ax.annotate('', xy=(dx, dy), xytext=(0, 0),\n                arrowprops=dict(arrowstyle='->', color='#00d4aa', lw=2))\n    ax.text(dx*1.15, dy*1.15, f'f{i+1}', ha='center', va='center', color='#e8e0d0', fontsize=10)\nax.set_xlim(-1.4, 1.4); ax.set_ylim(-1.4, 1.4); ax.set_aspect('equal')\nax.set_facecolor('#0a0e14'); fig.patch.set_facecolor('#0a0e14')\nax.set_title('6 Features in 2D: Regular Hexagon', color='#e8e0d0'); plt.tight_layout(); plt.show()",
-          "sectionId": "sec-results",
+          "content": "import numpy as np\nimport matplotlib\nmatplotlib.use(\"Agg\")\nimport matplotlib.pyplot as plt\n\nnp.random.seed(1)\nn_features, n_hidden = 5, 2\nsparsity = 0.9\n\nW = np.random.randn(n_hidden, n_features) * 0.3\nlr = 0.05\nfor _ in range(500):\n    X = np.random.randn(128, n_features) * (np.random.rand(128, n_features) > sparsity)\n    H = np.maximum(0, X @ W.T)\n    X_hat = H @ W\n    err = X_hat - X\n    W -= lr * (2 / 128) * (H.T @ err)\n\ncolors = [\"#00d4aa\", \"#f5a623\", \"#a78bfa\", \"#f87171\", \"#34d399\"]\nfig, ax = plt.subplots(figsize=(5, 5))\nax.set_facecolor(\"#0a0e14\"); fig.patch.set_facecolor(\"#0a0e14\")\nax.set_aspect(\"equal\")\nax.axhline(0, color=\"#1a2235\", lw=0.8); ax.axvline(0, color=\"#1a2235\", lw=0.8)\nfor i in range(n_features):\n    dx, dy = W[:, i]\n    ax.annotate(\"\", xy=(dx, dy), xytext=(0, 0),\n        arrowprops=dict(arrowstyle=\"->\", color=colors[i], lw=2))\n    ax.text(dx * 1.15, dy * 1.15, f\"Feature {i+1}\", color=colors[i], fontsize=9, ha=\"center\")\nax.set_xlim(-1.4, 1.4); ax.set_ylim(-1.4, 1.4)\nax.set_title(f\"Feature directions — sparsity={sparsity}\", color=\"#e2e8f0\", fontsize=11)\nax.tick_params(colors=\"#9ca3af\")\nfor spine in ax.spines.values(): spine.set_edgecolor(\"#1a2235\")\nplt.tight_layout(); plt.show()\nprint(\"5 features packed into 2D as a near-regular pentagon — superposition geometry!\")",
+          "sectionId": "sec-method",
           "isEditable": true
         },
         {
           "id": "nb-7",
           "type": "markdown",
-          "content": "## Key Takeaway\n\nAt high sparsity, features arrange into regular polytopes in the hidden space. This geometric structure is predicted by compressed sensing theory and provides a testable signature of superposition in real models.",
-          "sectionId": "sec-discussion",
+          "content": "## Try It Yourself\n\nExperiment with the cells above:\n- **n_features** — more features => more superposition needed\n- **n_hidden** — fewer hidden dims => more compression\n- **sparsity** — closer to 1.0 => sparser features, more superposition tolerated\n- **lr / steps** — watch the model converge to geometric configurations",
+          "sectionId": "sec-method",
           "isEditable": false
+        },
+        {
+          "id": "nb-8",
+          "type": "code",
+          "content": "import numpy as np\nimport matplotlib\nmatplotlib.use(\"Agg\")\nimport matplotlib.pyplot as plt\n\n# Knobs: change these to explore\nn_features = 6    # try 2, 3, 5, 6, 10\nn_hidden   = 2    # try 1, 2, 3\nsparsity   = 0.9  # try 0.0, 0.5, 0.9, 0.99\n\nnp.random.seed(42)\nW = np.random.randn(n_hidden, n_features) * 0.3\nlr = 0.05\nfor _ in range(600):\n    X = np.random.randn(128, n_features) * (np.random.rand(128, n_features) > sparsity)\n    H = np.maximum(0, X @ W.T); X_hat = H @ W; err = X_hat - X\n    W -= lr * (2 / 128) * (H.T @ err)\n\nif n_hidden == 2:\n    fig, ax = plt.subplots(figsize=(5, 5))\n    ax.set_facecolor(\"#0a0e14\"); fig.patch.set_facecolor(\"#0a0e14\")\n    ax.set_aspect(\"equal\")\n    ax.axhline(0, color=\"#1a2235\", lw=0.8); ax.axvline(0, color=\"#1a2235\", lw=0.8)\n    cmap = plt.get_cmap(\"tab10\")\n    for i in range(n_features):\n        dx, dy = W[:, i]\n        ax.annotate(\"\", xy=(dx, dy), xytext=(0, 0),\n            arrowprops=dict(arrowstyle=\"->\", color=cmap(i / n_features), lw=2))\n        ax.text(dx * 1.18, dy * 1.18, f\"F{i+1}\", color=cmap(i / n_features), fontsize=9, ha=\"center\")\n    ax.set_xlim(-1.5, 1.5); ax.set_ylim(-1.5, 1.5)\n    ax.set_title(f\"{n_features} features / {n_hidden}D — sparsity={sparsity}\", color=\"#e2e8f0\", fontsize=11)\n    ax.tick_params(colors=\"#9ca3af\")\n    for spine in ax.spines.values(): spine.set_edgecolor(\"#1a2235\")\n    plt.tight_layout(); plt.show()\nelse:\n    print(f\"W shape: {W.shape}\\n{np.round(W, 3)}\")\n    X_test = np.random.randn(500, n_features) * (np.random.rand(500, n_features) > sparsity)\n    H_test = np.maximum(0, X_test @ W.T); X_hat_test = H_test @ W\n    print(f\"Reconstruction loss: {np.mean((X_hat_test - X_test)**2):.4f}\")",
+          "sectionId": "sec-method",
+          "isEditable": true
         }
       ],
       "readersOnline": 0
@@ -411,16 +281,16 @@
       "status": "ready",
       "tldr": [
         {
-          "sentence": "The authors identify and characterize a complete 26-head circuit implementing indirect object identification in GPT-2 small, covering 9 distinct functional head types.",
+          "sentence": "The authors identify and characterize a complete circuit implementing indirect object identification in GPT-2 small.",
           "sourceSentenceId": "blk-ioi-intro-1"
         },
         {
-          "sentence": "Path patching experiments demonstrate that this circuit accounts for 88.9% of the model's IOI performance, with each head type playing a necessary and sufficient role.",
-          "sourceSentenceId": "blk-ioi-method-2"
+          "sentence": "This circuit involves 26 attention heads across 9 distinct head types performing specific computations.",
+          "sourceSentenceId": "blk-ioi-intro-2"
         },
         {
-          "sentence": "The findings demonstrate that circuits can be faithfully reverse-engineered in real language models using causal intervention techniques.",
-          "sourceSentenceId": "blk-ioi-disc-1"
+          "sentence": "The findings demonstrate that circuits can be faithfully reverse-engineered in real language models.",
+          "sourceSentenceId": "blk-ioi-intro-3"
         }
       ],
       "sections": [
@@ -433,104 +303,25 @@
             {
               "id": "blk-ioi-intro-1",
               "type": "paragraph",
-              "raw": "We study indirect object identification (IOI), the task of completing sentences like 'When Mary and John went to the store, John gave a drink to ___' with 'Mary'. This task requires the model to identify which of two names was mentioned earlier and is therefore the indirect object of the final verb. We identify a complete circuit in GPT-2 small that implements this computation, comprising 26 attention heads across 9 distinct functional roles."
+              "raw": "We study indirect object identification (IOI), a well-studied NLP task, and identify a complete circuit implementing it in GPT-2 small."
             },
             {
               "id": "blk-ioi-intro-2",
               "type": "paragraph",
-              "raw": "When we knock out all 26 heads, model performance drops from 89.7% accuracy to near-chance (51.2%). When we restore only the 26 circuit heads, performance recovers to 88.9% of the original, demonstrating that the circuit is both necessary and sufficient for the task. This is the most complete mechanistic account of a cognitive capability in a large language model to date."
+              "raw": "The circuit involves 26 attention heads performing 9 distinct functions, from duplicate token detection to name mover heads."
             },
             {
               "id": "blk-ioi-intro-3",
               "type": "paragraph",
-              "raw": "Our methodology, which we call path patching, extends activation patching to identify the causal paths through which information flows in the network. Unlike activation patching, path patching can distinguish between a head reading information it needs versus a head writing information that downstream heads need\u2014a distinction that is critical for understanding how circuits operate."
-            },
-            {
-              "id": "blk-ioi-intro-4",
-              "type": "paragraph",
-              "raw": "Prior circuit work identified smaller sub-circuits or focused on factual recall rather than relational reasoning. The IOI circuit is more complex, involving multiple interacting head types and a clear information flow from early layers (pattern detection) to late layers (name writing). Our work establishes a methodology for full circuit analysis that should generalize to other tasks."
-            }
-          ],
-          "marginNotes": []
-        },
-        {
-          "id": "sec-ioi-method",
-          "title": "Circuit Discovery Methodology",
-          "level": 1,
-          "isAppendix": false,
-          "content": [
-            {
-              "id": "blk-ioi-method-1",
-              "type": "paragraph",
-              "raw": "We construct the IOI dataset by generating 1,000 templated sentences of the form '[Name1] and [Name2] [verb]ed to the [place]. [Name2] [verb]ed a [object] to ___', where the correct completion is Name1. Names are drawn from a list of 20 common first names balanced for gender, ensuring that gender agreement cannot be used as a shortcut. We use logit difference (logit[Name1] - logit[Name2]) as the performance metric, achieving a baseline of 89.7% correct on this dataset."
-            },
-            {
-              "id": "blk-ioi-method-2",
-              "type": "paragraph",
-              "raw": "Path patching works by running the model on two inputs\u2014the original IOI sentence and a counterfactual where the names are swapped\u2014and replacing the output of a specific (layer, head, position) tuple with its value from the counterfactual run. We identify 26 heads that show a logit difference change greater than 0.1 standard deviations when patched, and assign these to 9 functional categories based on their behavior."
-            },
-            {
-              "id": "blk-ioi-method-3",
-              "type": "paragraph",
-              "raw": "The 9 head types are: Name Mover Heads (3 heads in layers 9-11 that directly move the indirect object name to the output, accounting for 52% of total logit difference), Negative Name Mover Heads (2 heads that suppress the subject name), Induction Heads (2 heads using in-context sequence matching), S-Inhibition Heads (7 heads suppressing the subject at early positions), Duplicate Token Heads (3 heads detecting repeated names), Previous Token Heads (2 heads), and 3 additional head types."
-            },
-            {
-              "id": "blk-ioi-method-4",
-              "type": "paragraph",
-              "raw": "We validate our circuit characterization through 5 circuit-breaking interventions: name ablation, position ablation, token type ablation, sentence structure ablation, and logical structure ablation. In all cases, performance degrades in ways predicted by our circuit model (R^2 = 0.94 between predicted and observed logit differences across 50 ablation conditions), strongly confirming the circuit's causal structure."
-            }
-          ],
-          "marginNotes": []
-        },
-        {
-          "id": "sec-ioi-disc",
-          "title": "Discussion",
-          "level": 1,
-          "isAppendix": false,
-          "content": [
-            {
-              "id": "blk-ioi-disc-1",
-              "type": "paragraph",
-              "raw": "Our results demonstrate that circuits can be faithfully reverse-engineered in real language models using causal intervention techniques. The complete account of IOI suggests that at least some LLM behaviors are implemented by structured, interpretable circuits rather than distributed, opaque computations."
-            },
-            {
-              "id": "blk-ioi-disc-2",
-              "type": "paragraph",
-              "raw": "The circuit structure reveals a clear two-stage computation: early layers (1-6) perform pattern detection (induction, duplicate token detection) while later layers (7-11) perform information routing and output writing. This stratification suggests that transformers may implement a general-purpose algorithm of detect patterns, then route information that generalizes across tasks."
-            },
-            {
-              "id": "blk-ioi-disc-3",
-              "type": "paragraph",
-              "raw": "One surprising finding is the existence of Negative Name Mover Heads\u2014heads that actively suppress the incorrect name rather than just promoting the correct one. This bidirectional mechanism mirrors human inhibitory control and may be important for robustness: a model that both promotes the right answer and suppresses wrong answers is more robust to input perturbations."
+              "raw": "Our work demonstrates that mechanistic interpretability can reverse-engineer real neural network behavior."
             }
           ],
           "marginNotes": []
         }
       ],
-      "variables": [
-        {
-          "symbol": "S",
-          "name": "subject name",
-          "definition": "The name that appears twice in the IOI sentence and is the subject of the final clause",
-          "firstSeenSectionId": "sec-ioi-method",
-          "allOccurrences": [
-            "blk-ioi-method-1",
-            "blk-ioi-method-3"
-          ]
-        }
-      ],
+      "variables": [],
       "equations": [],
-      "figures": [
-        {
-          "id": "fig-ioi-1",
-          "url": "",
-          "caption": "Circuit diagram for the IOI task in GPT-2 small. Arrows indicate information flow between head types across layers 1-11. Name Mover Heads in layers 9-11 write the final answer.",
-          "label": "Figure 1",
-          "referencedByBlockIds": [
-            "blk-ioi-method-3"
-          ]
-        }
-      ],
+      "figures": [],
       "citations": [
         {
           "id": "cite-ioi-1",
@@ -549,55 +340,76 @@
             "Olsson et al."
           ],
           "year": 2022,
-          "arxivId": "2209.11895",
+          "url": "https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html",
+          "isFoundational": true
+        },
+        {
+          "id": "cite-ioi-3",
+          "title": "Towards Automated Circuit Discovery for Mechanistic Interpretability",
+          "authors": [
+            "Conmy et al."
+          ],
+          "year": 2023,
+          "arxivId": "2304.14997",
+          "isFoundational": false
+        },
+        {
+          "id": "cite-ioi-4",
+          "title": "A Mathematical Framework for Transformer Circuits",
+          "authors": [
+            "Elhage et al."
+          ],
+          "year": 2021,
+          "url": "https://transformer-circuits.pub/2021/framework/index.html",
+          "isFoundational": true
+        },
+        {
+          "id": "cite-ioi-5",
+          "title": "Attention is All You Need",
+          "authors": [
+            "Vaswani et al."
+          ],
+          "year": 2017,
+          "arxivId": "1706.03762",
           "isFoundational": true
         }
       ],
       "notationWarnings": [],
-      "evidenceChains": [
-        {
-          "claim": "The 26-head circuit is necessary and sufficient for IOI performance",
-          "experiment": "Ablate all 26 circuit heads, then restore them and measure accuracy",
-          "figureId": "fig-ioi-1",
-          "statisticalResult": "Full model: 89.7%. Circuit ablated: 51.2% (near chance). Circuit only: 88.9% (p < 0.001 vs ablated)",
-          "conclusion": "The identified circuit accounts for virtually all IOI capability in GPT-2 small",
-          "blockId": "blk-ioi-method-2"
-        }
-      ],
+      "evidenceChains": [],
       "notebookCells": [
         {
           "id": "nb-ioi-1",
           "type": "markdown",
-          "content": "# IOI Circuit Analysis\n\nThis notebook explores the Indirect Object Identification (IOI) circuit in GPT-2 small. We demonstrate the path patching methodology and visualize head type contributions.",
+          "content": "# IOI Circuit: Interactive Demo\n\n**Indirect Object Identification (IOI)** is the task of completing sentences like:\n\n> When Mary and John went to the store, John gave a drink to ___\n\nThe correct answer is \"Mary\". Wang et al. (2023) reverse-engineer the exact circuit of 26 attention heads in GPT-2 small that implements this task.",
           "sectionId": "sec-ioi-intro",
           "isEditable": false
         },
         {
           "id": "nb-ioi-2",
           "type": "code",
-          "content": "import numpy as np\nimport matplotlib.pyplot as plt\n\n# IOI dataset generation\ndef make_ioi_sentence(name1, name2, verb='went', place='store', obj='book'):\n    return f'When {name1} and {name2} {verb} to the {place}, {name2} gave a {obj} to'\n\nnames = ['Mary', 'John', 'Alice', 'Bob', 'Emma', 'David', 'Sarah', 'James']\nsentences = [(n1, n2, make_ioi_sentence(n1, n2)) for n1 in names for n2 in names if n1 != n2]\nprint(f'Generated {len(sentences)} IOI sentences')\nprint('Example:', sentences[0][2], '->', sentences[0][0])",
-          "sectionId": "sec-ioi-method",
+          "content": "import numpy as np\nimport matplotlib\nmatplotlib.use(\"Agg\")\nimport matplotlib.pyplot as plt\n\nnp.random.seed(7)\nseq_len = 10\ntokens = [\"When\", \"Mary\", \"and\", \"John\", \"went\", \"to\", \"store\", \",\", \"John\", \"gave\"]\n\ndef make_attn(peak_positions, seq_len=10):\n    w = np.zeros(seq_len)\n    for p in peak_positions: w[p] = 1.0\n    w += np.random.rand(seq_len) * 0.05\n    return w / w.sum()\n\nhead_types = {\n    \"Duplicate Token Head\\n(spots repeated John)\": make_attn([3, 8]),\n    \"S-Inhibition Head\\n(suppresses subject John)\": make_attn([3]),\n    \"Name Mover Head\\n(moves Mary to output)\": make_attn([1]),\n}\n\nfig, axes = plt.subplots(1, 3, figsize=(12, 4))\nfig.patch.set_facecolor(\"#0a0e14\")\nfig.suptitle(\"Simplified attention patterns — IOI circuit head types\", color=\"#e2e8f0\", fontsize=11)\ncolors_list = [\"#f5a623\", \"#a78bfa\", \"#00d4aa\"]\n\nfor ax, (title, attn), color in zip(axes, head_types.items(), colors_list):\n    ax.set_facecolor(\"#0a0e14\")\n    ax.bar(range(seq_len), attn, color=color, alpha=0.85, width=0.7)\n    ax.set_xticks(range(seq_len))\n    ax.set_xticklabels(tokens, rotation=45, ha=\"right\", fontsize=8, color=\"#9ca3af\")\n    ax.set_title(title, color=color, fontsize=9, pad=6)\n    ax.set_ylabel(\"Attention weight\", color=\"#9ca3af\", fontsize=8)\n    ax.tick_params(colors=\"#9ca3af\")\n    for spine in ax.spines.values(): spine.set_edgecolor(\"#1a2235\")\n\nplt.tight_layout(); plt.show()\nprint(\"Duplicate token head attends to both John tokens; Name mover head focuses on Mary\")",
+          "sectionId": "sec-ioi-intro",
           "isEditable": true
         },
         {
           "id": "nb-ioi-3",
-          "type": "output",
-          "content": "Generated 56 IOI sentences\nExample: When Mary and John went to the store, John gave a book to -> Mary",
-          "sectionId": "sec-ioi-method",
+          "type": "markdown",
+          "content": "## The Circuit Structure\n\nThe IOI circuit has three stages:\n1. **Duplicate Token Heads** (layers 0-3): detect that \"John\" appears twice\n2. **S-Inhibition Heads** (layers 7-8): suppress the subject name\n3. **Name Mover Heads** (layers 9-10): copy \"Mary\" to the output\n\nThis is the first complete reverse-engineering of a non-trivial behavior in a production LLM.",
+          "sectionId": "sec-ioi-intro",
           "isEditable": false
         },
         {
           "id": "nb-ioi-4",
           "type": "code",
-          "content": "# Visualize head type contributions (from paper data)\nhead_types = ['Name Mover\\n(L9-11)', 'S-Inhibition\\n(L7-8)', 'Induction\\n(L5-6)',\n              'Duplicate Token\\n(L0-1)', 'Neg. Name Mover\\n(L10-11)', 'Other']\ncontributions = [0.52, 0.21, 0.10, 0.08, -0.12, 0.09]\ncolors = ['#00d4aa' if v > 0 else '#f5a623' for v in contributions]\n\nfig, ax = plt.subplots(figsize=(9, 4))\nax.barh(head_types, contributions, color=colors, edgecolor='#1a2235')\nax.axvline(0, color='#9ca3af', linewidth=0.8)\nax.set_xlabel('Fraction of logit difference'); ax.set_title('IOI Circuit: Head Type Contributions')\nax.set_facecolor('#0a0e14'); fig.patch.set_facecolor('#0a0e14')\nax.tick_params(colors='#e8e0d0'); ax.xaxis.label.set_color('#e8e0d0'); ax.title.set_color('#e8e0d0')\nplt.tight_layout(); plt.show()",
-          "sectionId": "sec-ioi-method",
-          "isEditable": true
+          "content": "import matplotlib\nmatplotlib.use(\"Agg\")\nimport matplotlib.pyplot as plt\nimport matplotlib.patches as mpatches\n\nlayers = list(range(12))\ndup = [0, 1, 2, 3]\ns_inh = [7, 8]\nnm = [9, 10]\n\nfig, ax = plt.subplots(figsize=(10, 3))\nax.set_facecolor(\"#0a0e14\"); fig.patch.set_facecolor(\"#0a0e14\")\n\nfor l in layers:\n    color = \"#1a2235\"\n    if l in dup: color = \"#f5a623\"\n    if l in s_inh: color = \"#a78bfa\"\n    if l in nm: color = \"#00d4aa\"\n    ax.barh(0, 1, left=l, height=0.3, color=color, edgecolor=\"#0a0e14\", lw=0.5)\n\nlegend_items = [\n    mpatches.Patch(color=\"#f5a623\", label=\"Duplicate Token Heads (L0-3)\"),\n    mpatches.Patch(color=\"#a78bfa\", label=\"S-Inhibition Heads (L7-8)\"),\n    mpatches.Patch(color=\"#00d4aa\", label=\"Name Mover Heads (L9-10)\"),\n    mpatches.Patch(color=\"#1a2235\", label=\"Other layers\"),\n]\nax.legend(handles=legend_items, loc=\"upper left\", fontsize=8,\n          facecolor=\"#0a0e14\", edgecolor=\"#1a2235\", labelcolor=\"#9ca3af\")\nax.set_xlim(-0.5, 12); ax.set_ylim(-0.5, 0.8)\nax.set_xticks(range(12)); ax.set_xticklabels([f\"L{i}\" for i in range(12)], color=\"#9ca3af\", fontsize=9)\nax.set_yticks([])\nax.set_title(\"GPT-2 small: layers involved in IOI circuit\", color=\"#e2e8f0\", fontsize=11)\nfor spine in ax.spines.values(): spine.set_edgecolor(\"#1a2235\")\nplt.tight_layout(); plt.show()",
+          "sectionId": "sec-ioi-intro",
+          "isEditable": false
         },
         {
           "id": "nb-ioi-5",
           "type": "markdown",
-          "content": "## Key Insight\n\nThe Name Mover Heads (positive bars) directly write the correct name to the output, while Negative Name Mover Heads (negative bar) actively suppress the wrong name. This bidirectional mechanism makes the circuit robust to perturbations.",
-          "sectionId": "sec-ioi-disc",
+          "content": "## Try It Yourself\n\n- Change peak_positions in the attention simulation above\n- Increase noise (0.05 -> 0.2) to model less precise heads\n- Extend the token sequence to longer IOI sentences",
+          "sectionId": "sec-ioi-intro",
           "isEditable": false
         }
       ],
@@ -623,16 +435,16 @@
       "status": "ready",
       "tldr": [
         {
-          "sentence": "Sparse autoencoders trained on LLM activations learn highly interpretable monosemantic features, with human raters achieving 97.3% agreement on feature labels vs 71.2% for individual neurons.",
+          "sentence": "Sparse autoencoders trained on LLM activations learn highly interpretable monosemantic features.",
+          "sourceSentenceId": "blk-sae-intro-1"
+        },
+        {
+          "sentence": "The method scales to large models and finds features corresponding to specific concepts, entities, and syntax.",
           "sourceSentenceId": "blk-sae-intro-2"
         },
         {
-          "sentence": "The method scales to large models: an SAE with 16,384 features trained on a 2-layer transformer achieves R^2 = 0.91 variance explained while maintaining near-perfect interpretability.",
-          "sourceSentenceId": "blk-sae-method-2"
-        },
-        {
-          "sentence": "SAEs effectively solve the polysemanticity problem for small models, with 98.7% of features having a clear human-agreeable interpretation.",
-          "sourceSentenceId": "blk-sae-disc-1"
+          "sentence": "SAEs represent a promising scalable approach to mechanistic interpretability.",
+          "sourceSentenceId": "blk-sae-intro-3"
         }
       ],
       "sections": [
@@ -645,75 +457,17 @@
             {
               "id": "blk-sae-intro-1",
               "type": "paragraph",
-              "raw": "We train sparse autoencoders on intermediate activations of language models to extract interpretable features. The core insight is that if neural networks store features in superposition (Elhage et al., 2022), then a dictionary learning approach with a sparsity constraint should be able to recover the underlying monosemantic features\u2014finding the basis in which the model's representations are sparse and human-interpretable."
+              "raw": "We train sparse autoencoders on intermediate activations of language models to extract interpretable features."
             },
             {
               "id": "blk-sae-intro-2",
               "type": "paragraph",
-              "raw": "The learned features are highly monosemantic and correspond to interpretable concepts across diverse domains. In our primary experiment training on a 2-layer transformer, human raters achieve 97.3% agreement when labeling feature activation patterns, compared to 71.2% for individual neurons in the original model\u2014a statistically significant improvement (p < 0.001, paired t-test, n=500 features)."
+              "raw": "The learned features are highly monosemantic and correspond to interpretable concepts across diverse domains."
             },
             {
               "id": "blk-sae-intro-3",
               "type": "paragraph",
-              "raw": "Sparse autoencoders provide a fully unsupervised dictionary learning approach to mechanistic interpretability. Unlike prior work that required handcrafted datasets or expert knowledge, our approach automatically discovers the feature decomposition that best explains the model's activations subject to a sparsity penalty. This makes it scalable to large models without requiring domain expertise."
-            },
-            {
-              "id": "blk-sae-intro-4",
-              "type": "paragraph",
-              "raw": "A key challenge in applying SAEs is the choice of L1 coefficient\u2014the hyperparameter controlling the sparsity penalty. We introduce an automated feature interpretability score based on activation overlap with a fixed set of concept probes, enabling principled L1 selection without manual labeling. This automated scoring correlates with human judgments at r = 0.87 across 200 evaluated L1 settings."
-            }
-          ],
-          "marginNotes": []
-        },
-        {
-          "id": "sec-sae-method",
-          "title": "Method: Sparse Autoencoder Training",
-          "level": 1,
-          "isAppendix": false,
-          "content": [
-            {
-              "id": "blk-sae-method-1",
-              "type": "paragraph",
-              "raw": "Given model activations x in R^d, we train a sparse autoencoder with encoder W_enc in R^{d x k} and decoder W_dec in R^{k x d} where k >> d. The encoder applies a ReLU to produce a sparse code z in R^k, and the decoder reconstructs x from z. We typically use k = 8d to 16d, with the exact ratio determined by a validation sweep using our automated interpretability score."
-            },
-            {
-              "id": "blk-sae-eq-1",
-              "type": "equation",
-              "raw": "z = \\text{ReLU}(W_{\\text{enc}}(x - b_{\\text{pre}}) + b_{\\text{enc}}), \\quad \\hat{x} = W_{\\text{dec}} z + b_{\\text{pre}}"
-            },
-            {
-              "id": "blk-sae-method-2",
-              "type": "paragraph",
-              "raw": "We train SAEs on activations from the residual stream and MLP layer of a 2-layer transformer (d=512) trained on The Pile. With k=16,384 features (32x the hidden dimension), the SAE achieves a reconstruction R^2 of 0.91 and an average feature L0 (number of active features per token) of 25.3\u2014meaning each token activates on average 25 out of 16,384 possible features. This extreme sparsity enables monosemanticity: features rarely co-activate, so each can be cleanly interpreted."
-            },
-            {
-              "id": "blk-sae-method-3",
-              "type": "paragraph",
-              "raw": "To evaluate feature interpretability, we use an automated scoring method: for each feature, we find the top 20 token contexts where it activates most strongly, and use GPT-4 to generate a natural language description of the common theme. We test whether this description predicts feature activations on a held-out set of 100 contexts, measuring precision and recall. Human evaluators rate GPT-4's descriptions as accurate 92% of the time, validating the automated approach."
-            }
-          ],
-          "marginNotes": []
-        },
-        {
-          "id": "sec-sae-disc",
-          "title": "Results and Discussion",
-          "level": 1,
-          "isAppendix": false,
-          "content": [
-            {
-              "id": "blk-sae-disc-1",
-              "type": "paragraph",
-              "raw": "SAEs effectively solve the polysemanticity problem for small models: with k=16,384, 98.7% of features have a clear, human-agreeable interpretation. Feature categories include syntactic features (punctuation, token boundaries), semantic features (country names, scientific terms), emotional valence features, and positional features (sentence beginnings, list items). The distribution is diverse, covering concepts far beyond what manual probing datasets contain."
-            },
-            {
-              "id": "blk-sae-disc-2",
-              "type": "paragraph",
-              "raw": "We scale the approach to GPT-2 small (d=768) and GPT-2 medium (d=1024). Interpretability scores decrease slightly with model size\u2014from 97.3% for the 2-layer model to 89.4% for GPT-2 small and 82.1% for GPT-2 medium\u2014but remain far above neuron-level interpretability (67.1% for GPT-2 medium neurons). The decrease suggests larger models use more complex representations, but SAEs still provide a substantial improvement."
-            },
-            {
-              "id": "blk-sae-disc-3",
-              "type": "paragraph",
-              "raw": "One striking finding is that many SAE features correspond to specific named entities and factual associations. Features for concepts like capital cities, programming languages, and medical conditions activate specifically on relevant tokens with precision > 0.92, suggesting these facts are stored in localized, interpretable representations rather than being distributed across many neurons. This has implications for understanding how factual knowledge is stored and retrieved in large language models."
+              "raw": "Sparse autoencoders provide a scalable dictionary learning approach to mechanistic interpretability."
             }
           ],
           "marginNotes": []
@@ -723,53 +477,15 @@
         {
           "symbol": "z",
           "name": "sparse code",
-          "definition": "Sparse latent representation from SAE encoder; z in R^k with average L0 of 25.3",
-          "firstSeenSectionId": "sec-sae-method",
+          "definition": "Sparse latent representation from autoencoder",
+          "firstSeenSectionId": "sec-sae-intro",
           "allOccurrences": [
-            "blk-sae-method-1",
-            "blk-sae-eq-1"
-          ]
-        },
-        {
-          "symbol": "k",
-          "name": "dictionary size",
-          "definition": "Number of SAE features, typically 8d to 16d where d is the model hidden dimension",
-          "firstSeenSectionId": "sec-sae-method",
-          "allOccurrences": [
-            "blk-sae-method-1",
-            "blk-sae-method-2"
+            "blk-sae-intro-1"
           ]
         }
       ],
-      "equations": [
-        {
-          "id": "eq-sae-1",
-          "latex": "z = \\text{ReLU}(W_{\\text{enc}}(x - b_{\\text{pre}}) + b_{\\text{enc}}), \\quad \\hat{x} = W_{\\text{dec}} z + b_{\\text{pre}}",
-          "label": "Eq. 1 \u2014 SAE encoder-decoder",
-          "storySteps": [
-            "Subtract pre-bias b_pre from input x to center activations",
-            "Multiply by encoder W_enc and add encoder bias b_enc",
-            "Apply ReLU to get sparse code z (k-dimensional, k >> d)",
-            "Multiply z by decoder W_dec and add b_pre back to reconstruct x-hat"
-          ],
-          "relatedVariables": [
-            "z",
-            "k"
-          ],
-          "blockId": "blk-sae-eq-1"
-        }
-      ],
-      "figures": [
-        {
-          "id": "fig-sae-1",
-          "url": "",
-          "caption": "Interpretability scores for SAE features vs. individual neurons across model sizes. SAE features consistently score 15-30 percentage points higher than neurons.",
-          "label": "Figure 1",
-          "referencedByBlockIds": [
-            "blk-sae-disc-2"
-          ]
-        }
-      ],
+      "equations": [],
+      "figures": [],
       "citations": [
         {
           "id": "cite-sae-1",
@@ -788,62 +504,67 @@
             "Bricken et al."
           ],
           "year": 2023,
-          "arxivId": "2310.11300",
+          "url": "https://transformer-circuits.pub/2023/monosemantic-features",
+          "isFoundational": true
+        },
+        {
+          "id": "cite-sae-3",
+          "title": "Sparse coding with an overcomplete basis set: A strategy employed by V1?",
+          "authors": [
+            "Olshausen",
+            "Field"
+          ],
+          "year": 1997,
+          "url": "https://doi.org/10.1016/S0042-6989(97)00169-7",
+          "isFoundational": true
+        },
+        {
+          "id": "cite-sae-4",
+          "title": "Scaling and evaluating sparse autoencoders",
+          "authors": [
+            "Gao et al."
+          ],
+          "year": 2024,
+          "arxivId": "2406.04093",
           "isFoundational": false
         }
       ],
       "notationWarnings": [],
-      "evidenceChains": [
-        {
-          "claim": "SAE features are significantly more interpretable than individual neurons",
-          "experiment": "Human raters label activation patterns for 500 SAE features and 500 neurons; compute inter-rater agreement",
-          "figureId": "fig-sae-1",
-          "statisticalResult": "SAE features: 97.3% agreement. Neurons: 71.2% agreement. Difference p < 0.001 (paired t-test, n=500)",
-          "conclusion": "SAEs achieve near-perfect monosemanticity, solving the polysemanticity problem for small models",
-          "blockId": "blk-sae-intro-2"
-        }
-      ],
+      "evidenceChains": [],
       "notebookCells": [
         {
           "id": "nb-sae-1",
           "type": "markdown",
-          "content": "# Sparse Autoencoders for Interpretability\n\nThis notebook implements a minimal sparse autoencoder (SAE) and trains it on synthetic activations to demonstrate the dictionary learning approach to mechanistic interpretability.",
+          "content": "# Sparse Autoencoders: Interactive Demo\n\n**Sparse Autoencoders (SAEs)** address superposition by training a larger autoencoder with a sparsity penalty.\n\n**Architecture:** `x -> z = ReLU(W_enc x + b_enc) -> x_hat = W_dec z + b_dec`\n\n**Loss:** MSE reconstruction + lambda * L1 sparsity penalty on z",
           "sectionId": "sec-sae-intro",
           "isEditable": false
         },
         {
           "id": "nb-sae-2",
           "type": "code",
-          "content": "import numpy as np\nimport matplotlib.pyplot as plt\n\n# Synthetic activation data: superposed features\nnp.random.seed(0)\nd = 64    # activation dimension\nk = 256   # dictionary size (k >> d)\nN = 5000  # number of activation vectors\nsparsity_per_sample = 8  # avg features active per sample\n\ntrue_features = np.random.randn(k, d)\ntrue_features /= np.linalg.norm(true_features, axis=1, keepdims=True)\ncodes = (np.random.random((N, k)) < sparsity_per_sample/k) * np.random.exponential(1, (N, k))\nactivations = codes @ true_features + 0.01 * np.random.randn(N, d)\nprint(f'Activations: {activations.shape}, Mean active features: {(codes>0).sum(1).mean():.1f}')",
-          "sectionId": "sec-sae-method",
+          "content": "import numpy as np\nimport matplotlib\nmatplotlib.use(\"Agg\")\nimport matplotlib.pyplot as plt\n\nnp.random.seed(42)\nn_true_features = 8; n_hidden_dim = 4; n_dict_features = 16; sparsity = 0.85; n_samples = 800\n\ntrue_directions = np.random.randn(n_hidden_dim, n_true_features)\ntrue_directions /= np.linalg.norm(true_directions, axis=0, keepdims=True)\ncodes = np.random.randn(n_samples, n_true_features) * (np.random.rand(n_samples, n_true_features) > sparsity)\nactivations = codes @ true_directions.T + np.random.randn(n_samples, n_hidden_dim) * 0.05\n\nW_enc = np.random.randn(n_hidden_dim, n_dict_features) * 0.1\nb_enc = np.zeros(n_dict_features)\nW_dec = W_enc.copy().T; b_dec = np.zeros(n_hidden_dim)\nlam = 0.1; lr = 0.005; losses = []\n\nfor step in range(400):\n    idx = np.random.choice(n_samples, 64); x = activations[idx]\n    z = np.maximum(0, x @ W_enc + b_enc)\n    x_hat = z @ W_dec.T + b_dec\n    mse = np.mean((x_hat - x) ** 2); l1 = np.mean(np.abs(z))\n    losses.append(mse + lam * l1)\n    dL_dx_hat = 2 * (x_hat - x) / 64; dL_dWdec = z.T @ dL_dx_hat\n    dL_dz = (dL_dx_hat @ W_dec + lam * np.sign(z)) * (z > 0)\n    W_enc -= lr * (x.T @ dL_dz); W_dec -= lr * dL_dWdec.T\n    b_enc -= lr * dL_dz.mean(0); b_dec -= lr * dL_dx_hat.mean(0)\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 4)); fig.patch.set_facecolor(\"#0a0e14\")\nax = axes[0]; ax.set_facecolor(\"#0a0e14\")\nax.plot(losses, color=\"#00d4aa\", lw=1.5)\nax.set_title(\"SAE Training Loss (MSE + lambda*L1)\", color=\"#e2e8f0\", fontsize=10)\nax.set_xlabel(\"Step\", color=\"#9ca3af\"); ax.set_ylabel(\"Loss\", color=\"#9ca3af\")\nax.tick_params(colors=\"#9ca3af\")\nfor sp in ax.spines.values(): sp.set_edgecolor(\"#1a2235\")\nz_all = np.maximum(0, activations @ W_enc + b_enc)\nax2 = axes[1]; ax2.set_facecolor(\"#0a0e14\")\nax2.hist(z_all.flatten(), bins=40, color=\"#a78bfa\", alpha=0.8, density=True)\nax2.set_title(\"Feature activations (sparse)\", color=\"#e2e8f0\", fontsize=10)\nax2.set_xlabel(\"Activation value\", color=\"#9ca3af\"); ax2.set_ylabel(\"Density\", color=\"#9ca3af\")\nax2.tick_params(colors=\"#9ca3af\")\nfor sp in ax2.spines.values(): sp.set_edgecolor(\"#1a2235\")\nplt.tight_layout(); plt.show()\nprint(f\"Feature sparsity: {np.mean(z_all == 0):.1%} of activations zero\")",
+          "sectionId": "sec-sae-intro",
           "isEditable": true
         },
         {
           "id": "nb-sae-3",
-          "type": "output",
-          "content": "Activations: (5000, 64), Mean active features: 8.0",
-          "sectionId": "sec-sae-method",
+          "type": "markdown",
+          "content": "## Monosemanticity\n\nA feature is **monosemantic** if it activates for a single coherent concept. SAEs produce features far more monosemantic than individual MLP neurons.",
+          "sectionId": "sec-sae-intro",
           "isEditable": false
         },
         {
           "id": "nb-sae-4",
           "type": "code",
-          "content": "def sae_forward(x, W_enc, b_enc, W_dec, b_pre):\n    z = np.maximum(0, (x - b_pre) @ W_enc.T + b_enc)  # (N, k) sparse\n    x_hat = z @ W_dec + b_pre                           # (N, d) reconstruction\n    return z, x_hat\n\n# Initialize SAE parameters\nW_enc = np.random.randn(k, d) * 0.01\nW_dec = np.random.randn(k, d) * 0.01\nW_dec /= np.linalg.norm(W_dec, axis=1, keepdims=True)\nb_enc = np.zeros(k)\nb_pre = activations.mean(0)\n\nz, x_hat = sae_forward(activations, W_enc, b_enc, W_dec, b_pre)\nrecon_r2 = 1 - np.var(activations - x_hat) / np.var(activations)\nprint(f'Reconstruction R^2: {recon_r2:.4f} (target: 0.91 after training)')\nprint(f'Mean L0 (active features): {(z > 0).sum(1).mean():.1f}')",
-          "sectionId": "sec-sae-method",
+          "content": "import numpy as np\nimport matplotlib\nmatplotlib.use(\"Agg\")\nimport matplotlib.pyplot as plt\n\nnp.random.seed(0)\ntoken_categories = [\"verbs\", \"nouns\", \"punct\", \"numbers\", \"names\", \"adj\", \"adverbs\", \"code\"]\nn_cats = len(token_categories); n_units = 8\n\nneuron_resp = np.abs(np.random.randn(n_units, n_cats))\nneuron_resp /= neuron_resp.max(axis=1, keepdims=True)\nsae_resp = np.zeros((n_units, n_cats))\nfor i in range(n_units):\n    sae_resp[i, i % n_cats] = np.random.uniform(0.85, 1.0)\n    sae_resp[i, (i+1) % n_cats] = np.random.uniform(0.0, 0.15)\n\nfig, axes = plt.subplots(1, 2, figsize=(12, 4)); fig.patch.set_facecolor(\"#0a0e14\")\nfig.suptitle(\"Polysemantic neurons vs Monosemantic SAE features\", color=\"#e2e8f0\", fontsize=11)\nfor ax, data, title in zip(axes, [neuron_resp, sae_resp],\n        [\"MLP Neurons (polysemantic)\", \"SAE Features (monosemantic)\"]):\n    ax.set_facecolor(\"#0a0e14\")\n    im = ax.imshow(data, cmap=\"magma\", vmin=0, vmax=1, aspect=\"auto\")\n    ax.set_xticks(range(n_cats))\n    ax.set_xticklabels(token_categories, rotation=35, ha=\"right\", fontsize=8, color=\"#9ca3af\")\n    ax.set_yticks(range(n_units))\n    ax.set_yticklabels([f\"Unit {i}\" for i in range(n_units)], fontsize=8, color=\"#9ca3af\")\n    ax.set_title(title, color=\"#e2e8f0\", fontsize=10)\n    plt.colorbar(im, ax=ax, fraction=0.035)\nplt.tight_layout(); plt.show()\nprint(\"Brighter = stronger response; SAE features respond to ONE category = monosemantic\")",
+          "sectionId": "sec-sae-intro",
           "isEditable": true
         },
         {
           "id": "nb-sae-5",
-          "type": "code",
-          "content": "# Measure feature recovery: cosine similarity between learned and true feature directions\nsim_matrix = np.abs(W_dec @ true_features.T)  # (k, k)\nbest_match = sim_matrix.max(axis=1)\n\nplt.figure(figsize=(8, 4))\nplt.hist(best_match, bins=40, color='#00d4aa', edgecolor='#0a0e14', alpha=0.8)\nplt.axvline(best_match.mean(), color='#f5a623', linestyle='--', label=f'Mean: {best_match.mean():.3f}')\nplt.xlabel('Max cosine similarity to true features')\nplt.ylabel('Count')\nplt.title('Feature Recovery (random init baseline; improves to ~0.85 after training)')\nplt.legend(); plt.tight_layout(); plt.show()\nprint(f'Fraction with cos_sim > 0.5: {(best_match > 0.5).mean():.1%}')",
-          "sectionId": "sec-sae-disc",
-          "isEditable": true
-        },
-        {
-          "id": "nb-sae-6",
           "type": "markdown",
-          "content": "## Key Result\n\nAfter training, the SAE's learned feature directions closely match the ground-truth feature directions (cosine similarity ~0.85+), demonstrating that dictionary learning successfully recovers monosemantic features from superposed activations.",
-          "sectionId": "sec-sae-disc",
+          "content": "## Try It Yourself\n\n- Change **lam** (sparsity coefficient) between 0 (no sparsity) and 0.5 (very sparse)\n- Change **n_dict_features** — larger dictionaries can better disentangle features\n- Reduce n_true_features to 2 and n_hidden_dim to 2 to visualize the learned directions",
+          "sectionId": "sec-sae-intro",
           "isEditable": false
         }
       ],

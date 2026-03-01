@@ -48,7 +48,7 @@ export default function PaperPage() {
   const { depth, recordAction } = useDepthMeter()
   const { stack, current: rabbitHoleCurrent, currentIndex: rabbitHoleIndex, push: pushRabbitHole, goBack: rabbitHoleBack, goForward: rabbitHoleForward } = useRabbitHole()
 
-  // Load paper data — try MongoDB first, then sessionStorage, then demo
+  // Load paper data — try demo data first, then sessionStorage, then MongoDB (with 30s timeout)
   useEffect(() => {
     const id = params.id as string
     if (!id) return
@@ -439,6 +439,8 @@ export default function PaperPage() {
             onEquationExpand={() => recordAction('expandedEquation')}
             onVariableHover={() => recordAction('hoveredVariable')}
             evidenceChains={i === visibleSections.length - 1 ? paper.evidenceChains : []}
+            notebookCells={(paper.notebookCells || []).filter(c => c.sectionId === section.id)}
+            onOpenNotebook={() => setShowNotebook(true)}
           />
         ))}
 

@@ -93,14 +93,30 @@ export default function NotebookEmbed({ paper, isOpen, onClose, onCellRun }: Not
 
         {!isLoading && notebook && (
           <div>
-            {notebook.cells.map((cell) => (
-              <NotebookCell
-                key={cell.id}
-                cell={cell}
-                workspaceId={notebook.daytonaWorkspaceId}
-                onRun={() => onCellRun?.()}
-              />
-            ))}
+            {notebook.cells.map((cell) => {
+              // Find which section this cell belongs to for cross-reference badge
+              const section = (paper.sections || []).find(s => s.id === cell.sectionId)
+              return (
+                <div key={cell.id} id={`nb-cell-${cell.id}`}>
+                  {section && (
+                    <div className="px-3 pt-2 pb-0">
+                      <a
+                        href={`#${section.id}`}
+                        onClick={onClose}
+                        className="text-xs text-teal/70 hover:text-teal hover:underline"
+                      >
+                        Also in paper §{section.title} ↗
+                      </a>
+                    </div>
+                  )}
+                  <NotebookCell
+                    cell={cell}
+                    workspaceId={notebook.daytonaWorkspaceId}
+                    onRun={() => onCellRun?.()}
+                  />
+                </div>
+              )
+            })}
           </div>
         )}
 
@@ -124,4 +140,3 @@ export default function NotebookEmbed({ paper, isOpen, onClose, onCellRun }: Not
     </div>
   )
 }
-
