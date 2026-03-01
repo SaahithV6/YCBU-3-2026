@@ -262,7 +262,7 @@ export default function HomePage() {
               { icon: '⚡', title: 'Web Agent Search', desc: 'Autonomous search across arXiv, bioRxiv, PubMed, Semantic Scholar' },
               { icon: '∑', title: 'Interactive Math', desc: 'Every equation blur-to-focus, click to expand derivation steps' },
               { icon: '◈', title: 'Rabbit Hole Navigation', desc: 'Follow any term or citation into a spatial navigation stack' },
-              { icon: '⟳', title: 'Live Notebooks', desc: 'Daytona sandboxes with runnable code from paper repositories' },
+              { icon: '⟳', title: 'Live Notebooks', desc: 'In-browser Python execution with Pyodide — no setup needed. Daytona sandboxes for full environments.' },
               { icon: '?', title: 'Prerequisites on Demand', desc: '"I don\'t understand this" — surfaces the missing concept inline' },
               { icon: '◎', title: 'Depth Meter', desc: 'Quiet engagement ring: no badges, just a signal of how deep you went' },
             ].map(({ icon, title, desc }) => (

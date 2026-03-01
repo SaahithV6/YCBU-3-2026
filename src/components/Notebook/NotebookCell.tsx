@@ -5,6 +5,7 @@ import hljs from 'highlight.js/lib/core'
 import python from 'highlight.js/lib/languages/python'
 import 'highlight.js/styles/github-dark.css'
 import { NotebookCell as NotebookCellType } from '@/lib/types'
+import { executePyodide } from '@/lib/pyodide'
 
 hljs.registerLanguage('python', python)
 
@@ -18,6 +19,7 @@ export default function NotebookCell({ cell, workspaceId, onRun }: NotebookCellP
   const [isRunning, setIsRunning] = useState(false)
   const [output, setOutput] = useState('')
   const [outputError, setOutputError] = useState('')
+  const [executionMode, setExecutionMode] = useState<'daytona' | 'pyodide' | null>(null)
   const codeRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -33,22 +35,28 @@ export default function NotebookCell({ cell, workspaceId, onRun }: NotebookCellP
     setOutput('')
     setOutputError('')
     try {
-      if (!workspaceId) {
-        // No sandbox — show clear message
-        setOutputError('Sandbox unavailable: no active Daytona workspace. Configure DAYTONA_API_KEY to enable execution.')
-        return
-      }
-      const response = await fetch('/api/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: cell.content, workspaceId }),
-      })
-      const data = await response.json() as { stdout?: string; stderr?: string; error?: string; exitCode?: number }
-      if (!response.ok) {
-        setOutputError(data.error || 'Execution failed')
+      if (workspaceId) {
+        // Daytona path (premium)
+        setExecutionMode('daytona')
+        const response = await fetch('/api/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: cell.content, workspaceId }),
+        })
+        const data = await response.json() as { stdout?: string; stderr?: string; error?: string; exitCode?: number }
+        if (!response.ok) {
+          setOutputError(data.error || 'Execution failed')
+        } else {
+          setOutput(data.stdout || '')
+          if (data.stderr) setOutputError(data.stderr)
+        }
       } else {
-        setOutput(data.stdout || '')
-        if (data.stderr) setOutputError(data.stderr)
+        // Pyodide in-browser fallback
+        setExecutionMode('pyodide')
+        setOutput('Loading Python runtime...')
+        const result = await executePyodide(cell.content)
+        setOutput(result.stdout)
+        if (result.stderr) setOutputError(result.stderr)
       }
       onRun?.(cell.id)
     } catch (e) {
@@ -77,7 +85,21 @@ export default function NotebookCell({ cell, workspaceId, onRun }: NotebookCellP
     return (
       <div className="border-b border-surface-2">
         <div className="flex items-center justify-between px-3 py-1.5 bg-surface-3">
-          <span className="text-xs font-mono text-text-muted">python</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-text-muted">python</span>
+            {executionMode && (
+              <span
+                className="text-xs px-1.5 py-0.5 rounded font-mono"
+                style={{
+                  backgroundColor: executionMode === 'daytona' ? '#f5a62322' : '#00d4aa22',
+                  color: executionMode === 'daytona' ? '#f5a623' : '#00d4aa',
+                  border: `1px solid ${executionMode === 'daytona' ? '#f5a62333' : '#00d4aa33'}`,
+                }}
+              >
+                {executionMode === 'daytona' ? 'Daytona Sandbox' : '⚡ Browser (Pyodide)'}
+              </span>
+            )}
+          </div>
           <button
             onClick={handleRun}
             disabled={isRunning}
