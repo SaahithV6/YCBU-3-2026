@@ -13,11 +13,20 @@ async function initPyodide() {
     // If some packages fail to load, continue with what loaded successfully
     console.warn('Some packages failed to load during initialization:', err)
   }
-  // Set matplotlib to use non-interactive AGG backend
+  // Set matplotlib to use non-interactive AGG backend and suppress harmless warnings
   pyodideInstance.runPython(`
 import matplotlib
 matplotlib.use('agg')
+import warnings
+warnings.filterwarnings('ignore', message='.*font cache.*')
+warnings.filterwarnings('ignore', message='.*FigureCanvasAgg is non-interactive.*')
+import matplotlib.pyplot as plt
 import sys, io
+
+# Patch plt.show() globally so it is a silent no-op in the Agg backend
+def _silent_show(*args, **kwargs):
+    pass
+plt.show = _silent_show
 `)
   pyodideReady = true
   self.postMessage({ type: 'ready' })
@@ -86,7 +95,15 @@ sys.stderr.write("Note: some packages could not be loaded in the browser environ
 
       // Collect output
       const stdout = pyodideInstance.runPython('_stdout_buf.getvalue()')
-      const stderr = pyodideInstance.runPython('_stderr_buf.getvalue()')
+      let stderr = pyodideInstance.runPython('_stderr_buf.getvalue()')
+
+      // Filter out harmless matplotlib warnings from stderr
+      const suppressedPattern = /Matplotlib is building the font cache|FigureCanvasAgg is non-interactive/
+      stderr = stderr
+        .split('\n')
+        .filter(line => !suppressedPattern.test(line))
+        .join('\n')
+        .trim()
 
       // Restore stdout/stderr
       pyodideInstance.runPython(`
