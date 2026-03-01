@@ -22,6 +22,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'pdfUrl and title are required' }, { status: 400 })
     }
 
+    // Check MongoDB cache before running expensive pipeline
+    if (paperId) {
+      try {
+        const { getDb } = await import('@/lib/mongodb')
+        const db = await getDb()
+        const cached = await db.collection('papers').findOne({ id: paperId })
+        if (cached && cached.status === 'ready') {
+          return NextResponse.json({ paperId, status: 'ready', paper: cached, cached: true })
+        }
+      } catch (e) {
+        console.warn('MongoDB cache check failed, proceeding:', e)
+      }
+    }
+
     // Stage 1: Extract PDF text
     let pdfText = ''
     try {

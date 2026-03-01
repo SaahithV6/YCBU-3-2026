@@ -126,6 +126,45 @@ export default function PaperPage() {
     })()
   }, [paper?.title])
 
+  const [isRegenerating, setIsRegenerating] = useState(false)
+
+  const handleRegenerate = async () => {
+    if (!paper || isRegenerating) return
+    const id = params.id as string
+    const decodedId = decodeURIComponent(id)
+    setIsRegenerating(true)
+    try {
+      // Delete cached version from MongoDB and Supermemory (best-effort)
+      const deleteRes = await fetch(`/api/papers/${encodeURIComponent(decodedId)}`, { method: 'DELETE' })
+      if (!deleteRes.ok && deleteRes.status !== 404) {
+        console.warn('Delete failed with status:', deleteRes.status)
+      }
+      // Re-process the paper
+      const res = await fetch('/api/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paper: {
+            id: decodedId,
+            title: paper.title,
+            authors: paper.authors,
+            pdfUrl: paper.pdfUrl,
+            sourceUrl: paper.sourceUrl,
+            sourceName: paper.sourceName,
+          },
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json() as { paper: ProcessedPaper }
+        setPaper(data.paper)
+      }
+    } catch (e) {
+      console.warn('Regenerate failed:', e)
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
+
   const sections = paper?.sections || []
 
   // Track current section via IntersectionObserver
@@ -423,6 +462,14 @@ export default function PaperPage() {
             className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all bg-surface border border-surface-2 disabled:opacity-50 ${discoverLoading ? 'text-text-muted' : 'text-amber'}`}
           >
             {discoverLoading ? <><span className="animate-spin">⟳</span> Discovering...</> : '🔍 Discover Related'}
+          </button>
+          <button
+            onClick={handleRegenerate}
+            disabled={isRegenerating}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all bg-surface border border-surface-2 disabled:opacity-50 text-text-muted"
+            title="Delete cached version and regenerate"
+          >
+            {isRegenerating ? <><span className="animate-spin">⟳</span> Regenerating...</> : '↺ Regenerate'}
           </button>
         </div>
 

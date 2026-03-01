@@ -28,3 +28,28 @@ export async function GET(
     return NextResponse.json({ error: 'Fetch failed' }, { status: 500 })
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    const { getDb } = await import('@/lib/mongodb').catch(() => ({ getDb: null }))
+    if (!getDb) {
+      return NextResponse.json({ error: 'MongoDB unavailable' }, { status: 503 })
+    }
+
+    const db = await getDb()
+    await db.collection('papers').deleteOne({ id })
+
+    const { deleteFromSupermemory } = await import('@/lib/supermemory')
+    await deleteFromSupermemory(id)
+
+    return NextResponse.json({ deleted: true, id })
+  } catch (error) {
+    console.warn('MongoDB delete error:', error)
+    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+  }
+}

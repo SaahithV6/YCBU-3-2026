@@ -3,6 +3,7 @@ import { searchArxiv } from '@/lib/arxiv'
 import { searchWithBrowserUse } from '@/lib/browseruse'
 import { searchSemanticScholar } from '@/lib/semanticScholar'
 import { searchOpenAlex } from '@/lib/openalex'
+import { querySupermemory } from '@/lib/supermemory'
 import { PaperMetadata } from '@/lib/types'
 import demoData from '@/data/demo-fallback.json'
 
@@ -60,6 +61,19 @@ export async function POST(request: NextRequest) {
       searchArxiv(query, 10),
       searchSemanticScholar(query, 10),
       searchOpenAlex(query, 10),
+      querySupermemory(query).then(results =>
+        results.map(r => ({
+          id: r.metadata.paperId,
+          title: r.metadata.title || 'Unknown',
+          authors: [],
+          pdfUrl: r.metadata.sourceUrl,
+          sourceUrl: r.metadata.sourceUrl,
+          sourceName: 'Memory' as const,
+          relevanceScore: r.score,
+          relevanceReason: 'From your reading history',
+          abstract: (r.content || '').substring(0, 300),
+        } as PaperMetadata))
+      ),
     ]
 
     if (process.env.BROWSER_USE_API_KEY) {

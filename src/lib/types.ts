@@ -99,6 +99,7 @@ export type PaperSourceName =
   | "Semantic Scholar"
   | "Sci-Net"
   | "bioRxiv"
+  | "Memory"
 
 export interface PaperSource {
   name: PaperSourceName
