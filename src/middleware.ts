@@ -9,7 +9,6 @@ const isPublicRoute = createRouteMatcher([
 ])
 
 const isProtectedRoute = createRouteMatcher([
-  '/paper/(.*)',
   '/thread/(.*)',
   '/api/process(.*)',
   '/api/prerequisite(.*)',

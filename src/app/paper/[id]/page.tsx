@@ -21,6 +21,7 @@ import { SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/nextjs'
 export default function PaperPage() {
   const params = useParams()
   const router = useRouter()
+  const clerkEnabled = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
   const [paper, setPaper] = useState<ProcessedPaper | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [readingMode, setReadingMode] = useState<ReadingMode>('read')
@@ -305,86 +306,117 @@ export default function PaperPage() {
           )}
         </div>
 
-        <HeaderZone
-          paper={paper}
-          readingMode={readingMode}
-          onReadingModeChange={setReadingMode}
-        />
-
-        {/* Toolbar */}
-        <div className="flex items-center gap-2 mb-8 flex-wrap">
-          <button
-            onClick={() => setShowCitationGraph(true)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all"
-            style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
-            title="Citation graph (C)"
-          >
-            ⬡ Citations
-          </button>
-          <button
-            onClick={() => setShowNotebook(true)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all"
-            style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
-            title="Notebook (N)"
-          >
-            ⌥ Notebook
-          </button>
-          <button
-            onClick={() => setShowGlossary(true)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all"
-            style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
-          >
-            Ω Glossary
-          </button>
-          <button
-            onClick={() => setShowHelp(true)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all"
-            style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
-            title="Keyboard shortcuts (?)"
-          >
-            ? Shortcuts
-          </button>
-        </div>
-
-        {/* Sections */}
-        {visibleSections.map((section, i) => (
-          <SectionRenderer
-            key={section.id}
-            section={section}
-            variables={paper.variables || []}
-            equations={paper.equations || []}
-            paperTitle={paper.title}
-            readingMode={readingMode}
-            onEquationExpand={() => recordAction('expandedEquation')}
-            onVariableHover={() => recordAction('hoveredVariable')}
-            evidenceChains={i === visibleSections.length - 1 ? paper.evidenceChains : []}
-          />
-        ))}
-
-        {/* Section navigation */}
-        {sections.length > 1 && (
-          <div className="sticky bottom-6 flex justify-center gap-2 mt-8">
-            <button
-              onClick={() => scrollToSection(currentSectionIndex - 1)}
-              disabled={currentSectionIndex === 0}
-              className="px-4 py-2 rounded-lg text-sm"
-              style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
-            >
-              ↑ Prev (K)
-            </button>
-            <span className="px-3 py-2 text-xs font-mono" style={{ color: '#9ca3af' }}>
-              {currentSectionIndex + 1} / {sections.length}
-            </span>
-            <button
-              onClick={() => scrollToSection(currentSectionIndex + 1)}
-              disabled={currentSectionIndex === sections.length - 1}
-              className="px-4 py-2 rounded-lg text-sm"
-              style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
-            >
-              ↓ Next (J)
-            </button>
-          </div>
+        {/* Auth gate: when Clerk is enabled and user is not signed in, show sign-in prompt */}
+        {clerkEnabled && (
+          <SignedOut>
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <div className="text-4xl mb-4">🔒</div>
+              <h2 className="text-xl font-display mb-2" style={{ color: '#e8e0d0', fontFamily: 'Syne, sans-serif' }}>
+                Sign in to read papers
+              </h2>
+              <p className="text-sm mb-6 max-w-sm" style={{ color: '#9ca3af', fontFamily: 'IBM Plex Serif, serif' }}>
+                Create a free account to access full papers, interactive equations, and citation graphs.
+              </p>
+              <SignInButton mode="modal">
+                <button
+                  className="px-5 py-2.5 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: '#00d4aa', color: '#0a0e14' }}
+                >
+                  Sign in to continue
+                </button>
+              </SignInButton>
+            </div>
+          </SignedOut>
         )}
+
+        {/* Paper content: always shown when Clerk is off; only shown when signed in when Clerk is on */}
+        {(() => {
+          const content = (
+            <>
+              <HeaderZone
+                paper={paper}
+                readingMode={readingMode}
+                onReadingModeChange={setReadingMode}
+              />
+
+              {/* Toolbar */}
+              <div className="flex items-center gap-2 mb-8 flex-wrap">
+                <button
+                  onClick={() => setShowCitationGraph(true)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all"
+                  style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
+                  title="Citation graph (C)"
+                >
+                  ⬡ Citations
+                </button>
+                <button
+                  onClick={() => setShowNotebook(true)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all"
+                  style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
+                  title="Notebook (N)"
+                >
+                  ⌥ Notebook
+                </button>
+                <button
+                  onClick={() => setShowGlossary(true)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all"
+                  style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
+                >
+                  Ω Glossary
+                </button>
+                <button
+                  onClick={() => setShowHelp(true)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded transition-all"
+                  style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
+                  title="Keyboard shortcuts (?)"
+                >
+                  ? Shortcuts
+                </button>
+              </div>
+
+              {/* Sections */}
+              {visibleSections.map((section, i) => (
+                <SectionRenderer
+                  key={section.id}
+                  section={section}
+                  variables={paper.variables || []}
+                  equations={paper.equations || []}
+                  paperTitle={paper.title}
+                  readingMode={readingMode}
+                  onEquationExpand={() => recordAction('expandedEquation')}
+                  onVariableHover={() => recordAction('hoveredVariable')}
+                  evidenceChains={i === visibleSections.length - 1 ? paper.evidenceChains : []}
+                />
+              ))}
+
+              {/* Section navigation */}
+              {sections.length > 1 && (
+                <div className="sticky bottom-6 flex justify-center gap-2 mt-8">
+                  <button
+                    onClick={() => scrollToSection(currentSectionIndex - 1)}
+                    disabled={currentSectionIndex === 0}
+                    className="px-4 py-2 rounded-lg text-sm"
+                    style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
+                  >
+                    ↑ Prev (K)
+                  </button>
+                  <span className="px-3 py-2 text-xs font-mono" style={{ color: '#9ca3af' }}>
+                    {currentSectionIndex + 1} / {sections.length}
+                  </span>
+                  <button
+                    onClick={() => scrollToSection(currentSectionIndex + 1)}
+                    disabled={currentSectionIndex === sections.length - 1}
+                    className="px-4 py-2 rounded-lg text-sm"
+                    style={{ backgroundColor: '#111827', color: '#9ca3af', border: '1px solid #1a2235' }}
+                  >
+                    ↓ Next (J)
+                  </button>
+                </div>
+              )}
+            </>
+          )
+          return clerkEnabled ? <SignedIn>{content}</SignedIn> : content
+        })()}
       </main>
 
       {/* Depth Meter */}

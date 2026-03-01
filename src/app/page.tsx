@@ -211,20 +211,51 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <button
-                onClick={handleProcessSelected}
-                disabled={selectedIds.length === 0 || status === 'processing'}
-                className="px-5 py-2.5 rounded-lg text-sm font-display transition-all"
-                style={{
-                  backgroundColor: selectedIds.length === 0 ? '#1a2235' : '#00d4aa',
-                  color: selectedIds.length === 0 ? '#9ca3af' : '#0a0e14',
-                }}
-              >
-                {status === 'processing'
-                  ? `Processing ${Object.values(processingStatus).filter(s => s === 'complete').length}/${selectedIds.length}...`
-                  : `Read ${selectedIds.length} paper${selectedIds.length !== 1 ? 's' : ''} →`
-                }
-              </button>
+              {clerkEnabled ? (
+                <>
+                  <SignedIn>
+                    <button
+                      onClick={handleProcessSelected}
+                      disabled={selectedIds.length === 0 || status === 'processing'}
+                      className="px-5 py-2.5 rounded-lg text-sm font-display transition-all"
+                      style={{
+                        backgroundColor: selectedIds.length === 0 ? '#1a2235' : '#00d4aa',
+                        color: selectedIds.length === 0 ? '#9ca3af' : '#0a0e14',
+                      }}
+                    >
+                      {status === 'processing'
+                        ? `Processing ${Object.values(processingStatus).filter(s => s === 'complete').length}/${selectedIds.length}...`
+                        : `Read ${selectedIds.length} paper${selectedIds.length !== 1 ? 's' : ''} →`
+                      }
+                    </button>
+                  </SignedIn>
+                  <SignedOut>
+                    <SignInButton mode="modal">
+                      <button
+                        className="px-5 py-2.5 rounded-lg text-sm font-display transition-all"
+                        style={{ backgroundColor: '#00d4aa', color: '#0a0e14' }}
+                      >
+                        Sign in to read papers →
+                      </button>
+                    </SignInButton>
+                  </SignedOut>
+                </>
+              ) : (
+                <button
+                  onClick={handleProcessSelected}
+                  disabled={selectedIds.length === 0 || status === 'processing'}
+                  className="px-5 py-2.5 rounded-lg text-sm font-display transition-all"
+                  style={{
+                    backgroundColor: selectedIds.length === 0 ? '#1a2235' : '#00d4aa',
+                    color: selectedIds.length === 0 ? '#9ca3af' : '#0a0e14',
+                  }}
+                >
+                  {status === 'processing'
+                    ? `Processing ${Object.values(processingStatus).filter(s => s === 'complete').length}/${selectedIds.length}...`
+                    : `Read ${selectedIds.length} paper${selectedIds.length !== 1 ? 's' : ''} →`
+                  }
+                </button>
+              )}
             </div>
 
             <PaperList

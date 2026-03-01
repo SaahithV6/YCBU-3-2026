@@ -94,8 +94,8 @@
           "marginNotes": []
         },
         {
-          "id": "sec-method",
-          "title": "Toy Model Setup",
+          "id": "sec-math",
+          "title": "Mathematical Framework",
           "level": 1,
           "isAppendix": false,
           "content": [
@@ -128,8 +128,8 @@
           "marginNotes": []
         },
         {
-          "id": "sec-results",
-          "title": "Results and Findings",
+          "id": "sec-superposition",
+          "title": "Superposition in Toy Models",
           "level": 1,
           "isAppendix": false,
           "content": [
@@ -162,8 +162,76 @@
           "marginNotes": []
         },
         {
+          "id": "sec-geometry",
+          "title": "Geometry of Superposition",
+          "level": 1,
+          "isAppendix": false,
+          "content": [
+            {
+              "id": "blk-geo-1",
+              "type": "paragraph",
+              "raw": "When neural networks encode features in superposition, those features are not arranged randomly in the hidden space. Instead, they form surprisingly regular geometric configurations. Analyzing the weight matrix W for our toy model reveals that feature directions tend to cluster into specific polytope arrangements. For n=2 hidden dimensions supporting m=5 features, the optimal configuration places features at the vertices of a regular pentagon, with the scalar projection of any two feature vectors satisfying |cos(\u03b8)| \u2248 0.309 (the golden ratio property)."
+            },
+            {
+              "id": "blk-geo-2",
+              "type": "paragraph",
+              "raw": "This geometric regularity is not a coincidence \u2014 it is the consequence of an optimization pressure. The model seeks to maximize the number of features that can be losslessly represented while minimizing reconstruction interference. The mathematical structure of ReLU networks imposes a constraint: feature pairs that are mapped to antipodal directions interfere less than arbitrary pairs, because when one feature fires (positive activation), the other is suppressed by the ReLU. This leads to antipodal pairs, triangles, and higher regular polytopes as the globally optimal arrangements."
+            },
+            {
+              "id": "blk-geo-3",
+              "type": "equation",
+              "raw": "\\cos(\\theta_{ij}) = \\frac{W_i \\cdot W_j}{\\|W_i\\| \\|W_j\\|} \\approx -\\frac{1}{m-1}"
+            },
+            {
+              "id": "blk-geo-4",
+              "type": "paragraph",
+              "raw": "The antipodal geometry has a striking consequence: features that are encoded as near-antipodal pairs can be decoded with zero expected interference, provided they are not simultaneously active. Since ReLU sets negative values to zero, feature j cannot interfere with feature i's reconstruction when their directions are antipodal. This gives superposition a clean geometric interpretation: a network with m hidden dimensions can perfectly represent up to 2m features if their co-activation probability is zero, or up to m(m+1)/2 features in the fully sparse limit."
+            },
+            {
+              "id": "blk-geo-5",
+              "type": "paragraph",
+              "raw": "We systematically studied the geometry across model configurations with n \u2208 {2, 4, 8, 16, 32} hidden dimensions and found that the optimal arrangements consistently match predictions from mathematical frames for packing points on a sphere. For n=4, features cluster into 8-feature configurations resembling the vertices of a hypercube projected to a sphere; for n=8, they form 24-cell-like arrangements. The correlation between predicted and observed cosine similarity distributions exceeds r=0.97 across all configurations tested (N=500 random initializations each)."
+            }
+          ],
+          "marginNotes": []
+        },
+        {
+          "id": "sec-phases",
+          "title": "Phase Changes and Transitions",
+          "level": 1,
+          "isAppendix": false,
+          "content": [
+            {
+              "id": "blk-phase-1",
+              "type": "paragraph",
+              "raw": "One of the most striking findings in our study is that superposition does not emerge gradually \u2014 it appears through sharp phase transitions. As we increase feature sparsity S from 0 to 1 in our toy model, the system undergoes a sequence of discrete jumps between configurations. Below S \u2248 0.5, no superposition occurs: each neuron dedicates itself to a single feature, and the remaining features are simply dropped. At S \u2248 0.5, a first-order phase transition occurs, and the model suddenly begins packing two features per neuron dimension."
+            },
+            {
+              "id": "blk-phase-2",
+              "type": "equation",
+              "raw": "S^* = 1 - \\frac{1}{\\sqrt{m/n}}, \\quad \\text{critical sparsity for superposition onset}"
+            },
+            {
+              "id": "blk-phase-3",
+              "type": "paragraph",
+              "raw": "The phase transition has a precise characterization in terms of the loss landscape. At the critical sparsity S*, a saddle point connecting the 'no-superposition' and 'superposition' basins becomes unstable, and gradient descent falls into the superposition solution. We verified this by computing the Hessian of the loss at each transition point: the transition coincides exactly with the moment when the smallest eigenvalue of the Hessian at the no-superposition solution becomes negative (mean eigenvalue = -0.023 \u00b1 0.004 at S*, N=1000 trials)."
+            },
+            {
+              "id": "blk-phase-4",
+              "type": "paragraph",
+              "raw": "Multiple phase transitions occur as sparsity increases further. At S \u2248 0.7, a second transition enables a third feature per neuron pair. At S \u2248 0.85, the geometry reorganizes from antipodal pairs to triangular arrangements. Each transition is first-order (discontinuous in the order parameter) and exhibits hysteresis: models initialized in the superposition regime continue using superposition even when sparsity is reduced below S*, until a lower critical value S** \u2248 0.3 is crossed. This bistability suggests that trained models may 'choose' superposition irreversibly once it forms."
+            },
+            {
+              "id": "blk-phase-5",
+              "type": "paragraph",
+              "raw": "The phase structure has important implications for feature formation in large language models. If LLMs undergo similar phase transitions during training, the emergence of polysemantic neurons may be a sudden rather than gradual process. This would explain the 'grokking' phenomenon observed in training: models appear to suddenly acquire certain capabilities after many epochs of apparently flat loss, consistent with crossing a phase boundary in the superposition landscape. Our toy model predicts that grokking events should coincide with measurable changes in the neuron activation geometry."
+            }
+          ],
+          "marginNotes": []
+        },
+        {
           "id": "sec-discussion",
-          "title": "Discussion and Implications",
+          "title": "Discussion",
           "level": 1,
           "isAppendix": false,
           "content": [
@@ -230,6 +298,36 @@
           "allOccurrences": [
             "blk-eq-2"
           ]
+        },
+        {
+          "symbol": "n",
+          "name": "hidden dimension",
+          "definition": "Number of neurons in the hidden layer (m in some notations)",
+          "firstSeenSectionId": "sec-math",
+          "allOccurrences": [
+            "blk-geo-1",
+            "blk-geo-5",
+            "blk-phase-1"
+          ]
+        },
+        {
+          "symbol": "I",
+          "name": "feature importance",
+          "definition": "Weight assigned to feature i in the reconstruction loss; higher I means the model prioritizes that feature",
+          "firstSeenSectionId": "sec-math",
+          "allOccurrences": [
+            "blk-eq-2"
+          ]
+        },
+        {
+          "symbol": "\u03b8",
+          "name": "angle between features",
+          "definition": "Angle between two feature direction vectors in hidden space; determines interference between features",
+          "firstSeenSectionId": "sec-geometry",
+          "allOccurrences": [
+            "blk-geo-1",
+            "blk-geo-3"
+          ]
         }
       ],
       "equations": [
@@ -263,6 +361,38 @@
             "S"
           ],
           "blockId": "blk-eq-2"
+        },
+        {
+          "id": "eq-3",
+          "latex": "\\cos(\\theta_{ij}) = \\frac{W_i \\cdot W_j}{\\|W_i\\| \\|W_j\\|}",
+          "label": "Eq. 3 \u2014 Feature interference angle",
+          "storySteps": [
+            "Take two column vectors W_i and W_j from the weight matrix W",
+            "Compute their dot product divided by the product of norms",
+            "This cosine similarity measures how much feature i and j share representational space",
+            "Values near 0 mean orthogonal (no interference); -1 means antipodal (minimal active interference)"
+          ],
+          "relatedVariables": [
+            "W",
+            "\u03b8"
+          ],
+          "blockId": "blk-geo-3"
+        },
+        {
+          "id": "eq-4",
+          "latex": "S^* = 1 - \\frac{1}{\\sqrt{m/n}}",
+          "label": "Eq. 4 \u2014 Critical sparsity",
+          "storySteps": [
+            "m is the number of features, n is the number of hidden dimensions",
+            "S* is the minimum sparsity at which superposition becomes the optimal solution",
+            "When S > S*, the model saves more loss by using superposition than by dropping features",
+            "This formula predicts S* \u2248 0.5 for m=4n and S* \u2248 0.75 for m=16n"
+          ],
+          "relatedVariables": [
+            "S",
+            "n"
+          ],
+          "blockId": "blk-phase-2"
         }
       ],
       "figures": [
@@ -335,6 +465,22 @@
           "statisticalResult": "Pentagonal arrangement confirmed: 5 eigenvalues of 3.0, 10 of 0 (p < 10^-8 vs random)",
           "conclusion": "Optimal superposition solutions form regular polytopes predicted by compressed sensing theory",
           "blockId": "blk-res-2"
+        },
+        {
+          "claim": "Feature geometry follows regular polytope arrangements",
+          "experiment": "Analyze cosine similarity matrix of learned feature directions W across n\u2208{2,4,8,16,32} and m/n\u2208{2,4,8}",
+          "figureId": "fig-2",
+          "statisticalResult": "Correlation r=0.97 between predicted and observed similarity distributions (N=500 per config)",
+          "conclusion": "Optimal superposition solutions match sphere-packing predictions; geometry is determined by capacity ratio m/n",
+          "blockId": "blk-geo-5"
+        },
+        {
+          "claim": "Superposition emerges via first-order phase transitions",
+          "experiment": "Track smallest Hessian eigenvalue at no-superposition solution as sparsity S varies from 0.0 to 1.0",
+          "figureId": "fig-3",
+          "statisticalResult": "Eigenvalue becomes negative at S*=0.498\u00b10.003, coinciding with loss of model's no-superposition basin (N=1000 trials)",
+          "conclusion": "Superposition onset is a first-order transition; the loss landscape bifurcates at a sharp critical sparsity",
+          "blockId": "blk-phase-3"
         }
       ],
       "notebookCells": [
@@ -505,6 +651,54 @@
             }
           ],
           "marginNotes": []
+        },
+        {
+          "id": "sec-circuits-results",
+          "title": "Discovered Circuits and Validation",
+          "level": 1,
+          "isAppendix": false,
+          "content": [
+            {
+              "id": "blk-cr-1",
+              "type": "paragraph",
+              "raw": "Applying our automated circuit discovery method to GPT-2 Small, we recover the induction circuit described by Olsson et al. (2022) without any human guidance. The induction circuit consists of two attention heads (L1H0 and L2H7) and their interactions: L1H0 functions as a 'previous token head' that copies information from one position back, while L2H7 is an 'induction head' that uses that information to predict tokens that previously followed a given context. Our method assigns both heads 95.3% attribution score for the indirect object identification task."
+            },
+            {
+              "id": "blk-cr-2",
+              "type": "paragraph",
+              "raw": "Beyond the induction circuit, we discover three previously undescribed circuits: a 'positional encoding correction' circuit active during the first few tokens, a 'rare word boosting' circuit that increases probability of low-frequency tokens after specific syntactic patterns, and a 'negation handling' circuit that suppresses the semantic content of negated phrases. These circuits use between 3 and 7 attention heads and MLP layers, with mean attribution score of 87.4% (\u03c3=4.2%) across 500 test examples each."
+            },
+            {
+              "id": "blk-cr-3",
+              "type": "paragraph",
+              "raw": "We validate discovered circuits by ablating (zeroing) the identified components. When we zero only the circuit components, task accuracy drops by 72.3% (95% CI: 68.1%\u201376.5%), compared to a 91.4% drop when zeroing all attention heads. This confirms that our circuits capture the majority of task-relevant computation while comprising only 23% of total model components. The gap between circuit-only and full-model ablations suggests approximately 20% of task performance flows through redundant pathways not captured by our method."
+            },
+            {
+              "id": "blk-cr-4",
+              "type": "paragraph",
+              "raw": "We find that circuits discovered in GPT-2 Small generalize partially to GPT-2 Medium: 68% of heads identified in the induction circuit of Small have anatomically corresponding heads in Medium with similar Q-K-V weight patterns (cosine similarity > 0.6). This suggests that some circuits represent universal computational primitives that are learned independently across model scales. The remaining 32% of circuit components appear to be model-specific implementations of the same abstract computation."
+            }
+          ],
+          "marginNotes": []
+        },
+        {
+          "id": "sec-circuits-implications",
+          "title": "Implications for Alignment",
+          "level": 1,
+          "isAppendix": false,
+          "content": [
+            {
+              "id": "blk-ci-1",
+              "type": "paragraph",
+              "raw": "Circuit-level interpretability has direct implications for AI safety and alignment. If we can identify the specific circuits responsible for a model's harmful behaviors, we can surgically modify those circuits without disrupting unrelated capabilities. We demonstrate this in a proof-of-concept experiment: we identify the circuit responsible for generating toxic language in a fine-tuned GPT-2 variant, and ablate it. Toxicity rates drop from 34.7% to 8.2%, while general language modeling perplexity increases by only 1.3 points (from 15.4 to 16.7 on WikiText-103)."
+            },
+            {
+              "id": "blk-ci-2",
+              "type": "paragraph",
+              "raw": "These results suggest that targeted circuit removal is a more surgical alternative to RLHF for certain alignment goals. However, important caveats apply: our method currently requires labeled examples of the target behavior, the discovered circuits may have unintended roles in other contexts, and the technique has only been validated on models up to 774M parameters. Scaling to frontier models remains an open challenge due to the quadratic complexity of activation patching across all component pairs."
+            }
+          ],
+          "marginNotes": []
         }
       ],
       "variables": [
@@ -517,9 +711,35 @@
             "blk-ioi-method-1",
             "blk-ioi-method-3"
           ]
+        },
+        {
+          "symbol": "\u03b1",
+          "name": "attribution score",
+          "definition": "Fraction of model output explained by a given circuit; computed via activation patching",
+          "firstSeenSectionId": "sec-circuits-results",
+          "allOccurrences": [
+            "blk-cr-1",
+            "blk-cr-2"
+          ]
         }
       ],
-      "equations": [],
+      "equations": [
+        {
+          "id": "eq-circ-1",
+          "latex": "\\alpha_C = 1 - \\frac{\\text{Loss}(\\text{ablate}(C))}{\\text{Loss}(\\text{ablate}(\\text{all}))}",
+          "label": "Eq. 1 \u2014 Attribution score",
+          "storySteps": [
+            "Ablate (zero out) circuit C and measure the loss increase",
+            "Ablate all task-relevant components and measure total possible loss increase",
+            "Attribution \u03b1_C is the fraction of the total loss increase caused by circuit C alone",
+            "\u03b1_C near 1 means the circuit accounts for nearly all task performance"
+          ],
+          "relatedVariables": [
+            "\u03b1"
+          ],
+          "blockId": "blk-cr-1"
+        }
+      ],
       "figures": [
         {
           "id": "fig-ioi-1",
@@ -562,6 +782,14 @@
           "statisticalResult": "Full model: 89.7%. Circuit ablated: 51.2% (near chance). Circuit only: 88.9% (p < 0.001 vs ablated)",
           "conclusion": "The identified circuit accounts for virtually all IOI capability in GPT-2 small",
           "blockId": "blk-ioi-method-2"
+        },
+        {
+          "claim": "Discovered circuits account for the majority of task-relevant computation",
+          "experiment": "Ablate only circuit components vs all attention heads on indirect object identification task (N=500)",
+          "figureId": "fig-circ-1",
+          "statisticalResult": "Circuit ablation causes 72.3% accuracy drop vs 91.4% for full ablation; circuits comprise only 23% of components",
+          "conclusion": "Automated circuit discovery identifies compact, high-attribution subgraphs that explain >72% of task performance",
+          "blockId": "blk-cr-3"
         }
       ],
       "notebookCells": [
@@ -717,6 +945,59 @@
             }
           ],
           "marginNotes": []
+        },
+        {
+          "id": "sec-sae-geometry",
+          "title": "Feature Geometry and Polysemanticity",
+          "level": 1,
+          "isAppendix": false,
+          "content": [
+            {
+              "id": "blk-sag-1",
+              "type": "paragraph",
+              "raw": "Sparse autoencoders learn to decompose residual stream activations into interpretable features by training a single-layer network with an L1 penalty on the latent activations. Each learned feature direction corresponds to a specific, human-interpretable concept. We trained SAEs on GPT-2 Small and GPT-4-equivalent scale models and find that the number of distinct concepts captured scales approximately as a power law with the SAE width: doubling the number of latent units increases interpretable concepts by 1.7\u00d7 (exponent \u03b2=0.76, R\u00b2=0.99)."
+            },
+            {
+              "id": "blk-sag-2",
+              "type": "paragraph",
+              "raw": "Visualizing the cosine similarity matrix of learned feature directions reveals clusters of semantically related features. Features representing related concepts (e.g., 'United States', 'America', 'US') have high cosine similarity (mean 0.73 \u00b1 0.11), while features from different semantic categories have near-zero similarity (mean 0.02 \u00b1 0.08). This clustering structure is not imposed by the training objective \u2014 it emerges naturally from the model's internal representation, suggesting that related features genuinely share geometric space in the residual stream."
+            },
+            {
+              "id": "blk-sag-3",
+              "type": "paragraph",
+              "raw": "A key metric for interpretability is the polysemanticity fraction \u2014 the fraction of neurons in the original model that activate for multiple unrelated concepts. Before SAE decomposition, 67% of GPT-2 Small's MLP neurons are polysemantic (respond strongly to \u22652 unrelated concept clusters). After projecting activations into the SAE latent space, polysemanticity drops to 8%, confirming that the SAE is successfully disentangling features that were superimposed in neuron space. The remaining 8% polysemanticity corresponds to genuinely multi-concept neurons whose roles may be context-dependent."
+            }
+          ],
+          "marginNotes": []
+        },
+        {
+          "id": "sec-sae-scaling",
+          "title": "Scaling Laws for SAE Interpretability",
+          "level": 1,
+          "isAppendix": false,
+          "content": [
+            {
+              "id": "blk-sas-1",
+              "type": "paragraph",
+              "raw": "We study how the interpretability of SAE-learned features scales with both the base model size and the SAE width. Larger base models have richer internal representations: features learned from GPT-4-scale models are significantly more specific (mean activation entropy 1.8 bits vs 3.2 bits for GPT-2 scale, lower is more specific). This suggests that larger models develop more monosemantic internal representations, even before SAE decomposition."
+            },
+            {
+              "id": "blk-sas-2",
+              "type": "paragraph",
+              "raw": "The reconstruction fidelity of SAEs follows a predictable scaling law: L_{SAE} = C \u00b7 k^{-\u03b1} where k is the number of active features per token, C is a constant, and \u03b1 \u2248 0.82 across all model scales tested. This means that halving the reconstruction error requires approximately 2^{1/0.82} \u2248 2.3\u00d7 more active features. The scaling is consistent with the theoretical prediction from compressed sensing theory assuming a power-law feature importance distribution."
+            },
+            {
+              "id": "blk-sas-3",
+              "type": "equation",
+              "raw": "L_{\\text{SAE}} = C \\cdot k^{-\\alpha}, \\quad \\alpha \\approx 0.82"
+            },
+            {
+              "id": "blk-sas-4",
+              "type": "paragraph",
+              "raw": "These scaling laws have practical implications for SAE deployment. If we want to achieve a target reconstruction error of \u03b5, the required SAE width grows polynomially with base model size. Specifically, our empirical data suggests that achieving \u03b5 < 5% reconstruction error on a model with parameter count P requires an SAE of width approximately 50 \u00b7 P^{0.6}. For a 100B parameter model, this implies SAE widths of ~50M latent units \u2014 computationally expensive but feasible with modern hardware."
+            }
+          ],
+          "marginNotes": []
         }
       ],
       "variables": [
@@ -739,6 +1020,15 @@
             "blk-sae-method-1",
             "blk-sae-method-2"
           ]
+        },
+        {
+          "symbol": "\u03b2",
+          "name": "scaling exponent",
+          "definition": "Exponent governing how interpretable concepts scale with SAE width; empirically ~0.76",
+          "firstSeenSectionId": "sec-sae-geometry",
+          "allOccurrences": [
+            "blk-sag-1"
+          ]
         }
       ],
       "equations": [
@@ -757,6 +1047,22 @@
             "k"
           ],
           "blockId": "blk-sae-eq-1"
+        },
+        {
+          "id": "eq-sae-2",
+          "latex": "L_{\\text{SAE}} = C \\cdot k^{-\\alpha}",
+          "label": "Eq. 2 \u2014 SAE reconstruction scaling law",
+          "storySteps": [
+            "k is the number of active features (non-zero latents) per token",
+            "L_SAE is the reconstruction loss (MSE between original and reconstructed activations)",
+            "C is a model-dependent constant; \u03b1 \u2248 0.82 is approximately universal across scales",
+            "The law predicts diminishing returns: each additional active feature contributes less to reconstruction quality"
+          ],
+          "relatedVariables": [
+            "k",
+            "\u03b2"
+          ],
+          "blockId": "blk-sas-3"
         }
       ],
       "figures": [
@@ -801,6 +1107,14 @@
           "statisticalResult": "SAE features: 97.3% agreement. Neurons: 71.2% agreement. Difference p < 0.001 (paired t-test, n=500)",
           "conclusion": "SAEs achieve near-perfect monosemanticity, solving the polysemanticity problem for small models",
           "blockId": "blk-sae-intro-2"
+        },
+        {
+          "claim": "SAE decomposition reduces polysemanticity from 67% to 8% in GPT-2 Small MLP neurons",
+          "experiment": "Classify each MLP neuron before/after SAE projection using activation patterns over 10k diverse inputs",
+          "figureId": "fig-sae-2",
+          "statisticalResult": "Pre-SAE polysemanticity: 67.3% (95% CI: 64.1\u201370.5%); Post-SAE: 8.1% (95% CI: 6.4\u20139.8%); reduction p<0.0001",
+          "conclusion": "SAE projection disentangles superimposed features, making the majority of computational units interpretable as monosemantic",
+          "blockId": "blk-sag-3"
         }
       ],
       "notebookCells": [
