@@ -2,29 +2,54 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useQuery, useMutation } from 'convex/react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../../../../convex/_generated/api'
 import { Id } from '../../../../convex/_generated/dataModel'
+import { ProcessedPaper } from '@/lib/types'
 
 export default function PaperPage() {
   const params = useParams()
   const router = useRouter()
   const paperId = params.paperId as string
 
-  const paper = useQuery(api.papers.get, paperId ? { id: paperId as Id<'papers'> } : 'skip')
+  const convexPaper = useQuery(api.papers.get, paperId ? { id: paperId as Id<'papers'> } : 'skip')
   const incrementReaders = useMutation(api.papers.incrementReaders)
+
+  const [sessionPaper, setSessionPaper] = useState<ProcessedPaper | null>(null)
 
   useEffect(() => {
     if (!paperId) return
-    incrementReaders({ id: paperId as Id<'papers'>, delta: 1 })
-      .catch(() => {})
+    try {
+      const stored = sessionStorage.getItem(`paper:${paperId}`)
+      if (stored) {
+        setSessionPaper(JSON.parse(stored) as ProcessedPaper)
+      }
+    } catch (e) {
+      console.warn('Failed to load paper from sessionStorage:', e)
+    }
+  }, [paperId])
+
+  useEffect(() => {
+    if (!paperId) return
+    try {
+      incrementReaders({ id: paperId as Id<'papers'>, delta: 1 }).catch(() => {})
+    } catch {
+      // Convex not configured
+    }
     return () => {
-      incrementReaders({ id: paperId as Id<'papers'>, delta: -1 })
-        .catch(() => {})
+      try {
+        incrementReaders({ id: paperId as Id<'papers'>, delta: -1 }).catch(() => {})
+      } catch {
+        // Convex not configured
+      }
     }
   }, [paperId, incrementReaders])
 
-  if (paper === undefined) {
+  // Use Convex data if available, fall back to sessionStorage
+  const paper = convexPaper ?? sessionPaper
+
+  // Show loading if Convex is still querying and sessionStorage has no data
+  if (convexPaper === undefined && sessionPaper === null) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
         <div className="text-center">

@@ -66,7 +66,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       paperId,
       status: 'ready',
-      data: {
+      paper: {
+        title,
+        authors: authors || [],
+        pdfUrl,
+        sourceUrl: sourceUrl || pdfUrl,
+        sourceName: sourceName || 'arXiv',
         ...parsed,
         variables,
         notationWarnings,

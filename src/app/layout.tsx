@@ -9,15 +9,22 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  const content = (
+    <html lang="en">
+      <body>
+        <ConvexClientProvider>
+          {children}
+        </ConvexClientProvider>
+      </body>
+    </html>
+  )
+
+  if (!clerkKey) return content
+
   return (
     <ClerkProvider>
-      <html lang="en">
-        <body>
-          <ConvexClientProvider>
-            {children}
-          </ConvexClientProvider>
-        </body>
-      </html>
+      {content}
     </ClerkProvider>
   )
 }
