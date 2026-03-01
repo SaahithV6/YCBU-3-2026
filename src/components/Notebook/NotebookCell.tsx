@@ -10,7 +10,7 @@ interface NotebookCellProps {
 
 export default function NotebookCell({ cell, onRun }: NotebookCellProps) {
   const [isRunning, setIsRunning] = useState(false)
-  const [output, setOutput] = useState(cell.output || '')
+  const [output, setOutput] = useState('')
 
   const handleRun = async () => {
     if (cell.type !== 'code') return
@@ -50,7 +50,7 @@ export default function NotebookCell({ cell, onRun }: NotebookCellProps) {
       <div style={{ borderBottom: '1px solid #1a2235' }}>
         <div className="flex items-center justify-between px-3 py-1.5" style={{ backgroundColor: '#0d1117' }}>
           <span className="text-xs font-mono" style={{ color: '#9ca3af' }}>
-            {cell.language || 'python'}
+            python
           </span>
           <button
             onClick={handleRun}

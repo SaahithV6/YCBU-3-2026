@@ -1,60 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { processPaperWithClaude } from '@/lib/claude'
-import { PaperMetadata } from '@/lib/types'
-import demoData from '@/data/demo-fallback.json'
+import { extractPdf } from '@/lib/extractPdf'
+import { parsePaperFromText } from '@/lib/parsePaper'
+import { generateNotebook } from '@/lib/generateNotebook'
+import { extractVariables } from '@/lib/extractVariables'
+import { storeInSupermemory } from '@/lib/supermemory'
+import { Section } from '@/lib/types'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
 
 export async function POST(request: NextRequest) {
   try {
-    const { paper } = await request.json() as { paper: PaperMetadata }
+    const { paperId, title, authors, pdfUrl, sourceUrl, sourceName } = await request.json()
 
-    if (!paper || !paper.id) {
-      return NextResponse.json({ error: 'Paper data is required' }, { status: 400 })
+    if (!pdfUrl || !title) {
+      return NextResponse.json({ error: 'pdfUrl and title are required' }, { status: 400 })
     }
 
-    // Check if this paper is in our demo data
-    const demoPaper = demoData.papers.find(p => p.id === paper.id)
-    if (demoPaper) {
-      return NextResponse.json({ paper: demoPaper, source: 'demo' })
+    // Stage 1: Extract PDF text
+    let pdfText = ''
+    try {
+      pdfText = await extractPdf(pdfUrl)
+    } catch (err) {
+      console.warn('PDF extraction failed, proceeding with empty text:', err)
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) {
-      // Return a minimal processed version without Claude
-      return NextResponse.json({
-        paper: {
-          ...paper,
-          tldr: [
-            { sentence: `This paper investigates ${paper.title.toLowerCase()}.`, sourceSentence: paper.abstract.substring(0, 100) },
-            { sentence: 'The authors present methods and findings in the paper.', sourceSentence: paper.abstract.substring(100, 200) || paper.abstract },
-            { sentence: 'Results are presented and discussed in detail.', sourceSentence: paper.abstract.substring(200) || paper.abstract },
-          ],
-          readingTime: Math.ceil(paper.abstract.split(' ').length / 200) + 10,
-          sections: [
-            {
-              id: 'abstract',
-              title: 'Abstract',
-              content: paper.abstract,
-              orientationSentence: 'The abstract provides an overview of the paper\'s contributions.',
-              equations: [],
-              figures: [],
-            }
-          ],
-          variables: [],
-          citations: [],
-          evidenceChains: [],
-        },
-        source: 'fallback'
-      })
+    // Stage 2: Parse with Claude
+    const parsed = await parsePaperFromText(title, authors || [], pdfText, sourceUrl || pdfUrl)
+
+    // Stage 3: Extract variables with dedicated pass
+    let variables = parsed.variables || []
+    let notationWarnings = parsed.notationWarnings || []
+    if (parsed.sections && parsed.sections.length > 0) {
+      try {
+        const extracted = await extractVariables(parsed.sections as Section[])
+        if (extracted.variables.length > 0) variables = extracted.variables
+        if (extracted.notationWarnings.length > 0) notationWarnings = extracted.notationWarnings
+      } catch (err) {
+        console.warn('Variable extraction failed:', err)
+      }
     }
 
-    // Process with Claude
-    const processed = await processPaperWithClaude(paper)
+    // Stage 4: Generate notebook
+    let notebookCells = parsed.notebookCells || []
+    if (parsed.sections && parsed.sections.length > 0) {
+      try {
+        const cells = await generateNotebook(title, parsed.sections as Section[], parsed.githubUrl)
+        if (cells.length > 0) notebookCells = cells
+      } catch (err) {
+        console.warn('Notebook generation failed:', err)
+      }
+    }
+
+    // Store in Supermemory for future prerequisite lookups
+    if (pdfText) {
+      storeInSupermemory(
+        `${title}\n\n${pdfText.substring(0, 2000)}`,
+        { title, sourceUrl: sourceUrl || pdfUrl, paperId }
+      ).catch(err => console.warn('Supermemory store failed:', err))
+    }
 
     return NextResponse.json({
-      paper: { ...paper, ...processed },
-      source: 'claude'
+      paperId,
+      status: 'ready',
+      data: {
+        ...parsed,
+        variables,
+        notationWarnings,
+        notebookCells,
+      },
     })
   } catch (error) {
     console.error('Processing error:', error)

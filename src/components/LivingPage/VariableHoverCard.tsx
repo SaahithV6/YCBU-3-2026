@@ -42,16 +42,16 @@ export default function VariableHoverCard({ symbol, variable, children, onHover 
             )}
           </div>
           <p style={{ color: '#e8e0d0' }} className="mb-1">{variable.definition}</p>
-          <p className="text-xs" style={{ color: '#9ca3af' }}>{variable.role}</p>
+          <p className="text-xs" style={{ color: '#9ca3af' }}>{variable.name}</p>
           <div className="mt-2 pt-2 flex items-center gap-2" style={{ borderTop: '1px solid #1a2235' }}>
             <span className="text-xs" style={{ color: '#9ca3af' }}>used</span>
             <div className="flex-1 h-1 rounded-full" style={{ backgroundColor: '#1a2235' }}>
               <div
                 className="h-1 rounded-full"
-                style={{ backgroundColor: '#00d4aa', width: `${Math.min((variable.occurrences / 30) * 100, 100)}%` }}
+                style={{ backgroundColor: '#00d4aa', width: `${Math.min(((variable.allOccurrences?.length ?? 0) / 30) * 100, 100)}%` }}
               />
             </div>
-            <span className="text-xs font-mono" style={{ color: '#00d4aa' }}>{variable.occurrences}×</span>
+            <span className="text-xs font-mono" style={{ color: '#00d4aa' }}>{variable.allOccurrences?.length ?? 0}×</span>
           </div>
           {/* Arrow */}
           <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 rotate-45" style={{ backgroundColor: '#111827', borderRight: '1px solid #00d4aa', borderBottom: '1px solid #00d4aa' }} />

@@ -18,7 +18,7 @@ export default function GlossarySidebar({ variables, isOpen, onClose, onVariable
     v.definition.toLowerCase().includes(search.toLowerCase())
   )
 
-  const sorted = [...filtered].sort((a, b) => b.occurrences - a.occurrences)
+  const sorted = [...filtered].sort((a, b) => (b.allOccurrences?.length ?? 0) - (a.allOccurrences?.length ?? 0))
 
   if (!isOpen) return null
 
@@ -66,12 +66,12 @@ export default function GlossarySidebar({ variables, isOpen, onClose, onVariable
                 <div
                   className="h-1 rounded-full"
                   style={{
-                    width: `${Math.min((variable.occurrences / 30) * 40, 40)}px`,
+                    width: `${Math.min(((variable.allOccurrences?.length ?? 0) / 30) * 40, 40)}px`,
                     backgroundColor: '#00d4aa',
                     opacity: 0.5,
                   }}
                 />
-                <span className="text-xs font-mono" style={{ color: '#9ca3af' }}>{variable.occurrences}×</span>
+                <span className="text-xs font-mono" style={{ color: '#9ca3af' }}>{variable.allOccurrences?.length ?? 0}×</span>
               </div>
             </div>
             <p className="text-xs" style={{ color: '#9ca3af', lineHeight: '1.4' }}>

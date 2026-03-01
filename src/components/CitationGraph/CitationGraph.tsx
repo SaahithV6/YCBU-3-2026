@@ -16,7 +16,7 @@ export default function CitationGraph({ citations, paperTitle, onCitationClick, 
 
   const filteredCitations = filter === 'all' 
     ? citations 
-    : citations.filter(c => c.type === filter)
+    : filter === 'foundational' ? citations.filter(c => c.isFoundational) : citations.filter(c => !c.isFoundational)
 
   useEffect(() => {
     if (!svgRef.current || !window || filteredCitations.length === 0) return
@@ -36,7 +36,7 @@ export default function CitationGraph({ citations, paperTitle, onCitationClick, 
           ...filteredCitations.map((c, i) => ({
             id: c.id,
             label: c.title.substring(0, 30) + (c.title.length > 30 ? '...' : ''),
-            type: c.type,
+            type: c.isFoundational ? 'foundational' : 'related',
             citation: c,
             x: width / 2 + Math.cos((i / filteredCitations.length) * 2 * Math.PI) * 150,
             y: height / 2 + Math.sin((i / filteredCitations.length) * 2 * Math.PI) * 150,

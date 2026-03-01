@@ -51,10 +51,11 @@ export default function HomePage() {
   }
 
   const handlePaperToggle = (paper: PaperMetadata) => {
+    if (!paper.id) return
     setSelectedIds(prev =>
-      prev.includes(paper.id)
+      prev.includes(paper.id!)
         ? prev.filter(id => id !== paper.id)
-        : [...prev, paper.id]
+        : [...prev, paper.id!]
     )
   }
 
@@ -67,11 +68,11 @@ export default function HomePage() {
     if (selectedIds.length === 0) return
     setStatus('processing')
 
-    const selected = papers.filter(p => selectedIds.includes(p.id))
+    const selected = papers.filter(p => p.id && selectedIds.includes(p.id))
 
     // Process papers in parallel, update status as each completes
     const processPromises = selected.map(async (paper) => {
-      setProcessingStatus(prev => ({ ...prev, [paper.id]: 'processing...' }))
+      setProcessingStatus(prev => ({ ...prev, [paper.id!]: 'processing...' }))
 
       try {
         const response = await fetch('/api/process', {
@@ -92,10 +93,10 @@ export default function HomePage() {
           // Storage might be full, continue anyway
         }
 
-        setProcessingStatus(prev => ({ ...prev, [paper.id]: 'complete' }))
+        setProcessingStatus(prev => ({ ...prev, [paper.id!]: 'complete' }))
         return processedPaper
       } catch (e) {
-        setProcessingStatus(prev => ({ ...prev, [paper.id]: 'error' }))
+        setProcessingStatus(prev => ({ ...prev, [paper.id!]: 'error' }))
         return null
       }
     })
@@ -104,7 +105,7 @@ export default function HomePage() {
     const results = await Promise.allSettled(processPromises)
     const firstReady = selected[0]
     if (firstReady) {
-      router.push(`/paper/${encodeURIComponent(firstReady.id)}`)
+      router.push(`/paper/${encodeURIComponent(firstReady.id!)}`)
     }
   }
 

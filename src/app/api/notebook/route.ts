@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     // Generate notebook cells with Claude
     let cells
     if (process.env.ANTHROPIC_API_KEY) {
-      cells = await generateNotebookCells(paper)
+      cells = await generateNotebookCells(paper.title, [], undefined)
     } else {
       // Demo fallback cells
       cells = [
@@ -30,6 +30,8 @@ export async function POST(request: NextRequest) {
           id: 'cell1',
           type: 'markdown' as const,
           content: `# ${paper.title}\n\n**Demo Notebook**\n\nThis notebook demonstrates the core concepts from this paper. Configure \`ANTHROPIC_API_KEY\` to generate a paper-specific notebook.`,
+          sectionId: 'sec-intro',
+          isEditable: false,
         },
         {
           id: 'cell2',
@@ -41,7 +43,8 @@ import matplotlib.pyplot as plt
 # This would implement the paper's algorithm
 print("Paper:", "${paper.title}")
 print("Authors:", "${paper.authors.slice(0, 3).join(', ')}")`,
-          language: 'python',
+          sectionId: 'sec-method',
+          isEditable: true,
         },
         {
           id: 'cell3',
@@ -52,7 +55,8 @@ hidden_dims = 64      # Try: 32, 128, 256
 sparsity = 0.1        # Try: 0.01, 0.5
 
 print(f"Configuration: lr={learning_rate}, hidden={hidden_dims}, sparsity={sparsity}")`,
-          language: 'python',
+          sectionId: 'sec-results',
+          isEditable: true,
         }
       ]
     }

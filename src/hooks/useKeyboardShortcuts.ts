@@ -14,6 +14,7 @@ interface ShortcutHandlers {
   onRabbitHoleBack?: () => void
   onRabbitHoleForward?: () => void
   onShowHelp?: () => void
+  onOpenSearch?: () => void
 }
 
 export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
@@ -62,6 +63,10 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
         break
       case '?':
         handlers.onShowHelp?.()
+        break
+      case '/':
+        e.preventDefault()
+        handlers.onOpenSearch?.()
         break
     }
   }, [handlers])

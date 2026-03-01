@@ -64,21 +64,21 @@ export default function EquationRenderer({ equation, onExpand }: EquationRendere
           </p>
         )}
 
-        {isFocused && (
+        {isFocused && equation.label && (
           <div className="mt-3 pt-3" style={{ borderTop: '1px solid #1a2235' }}>
-            <p className="text-sm" style={{ color: '#9ca3af' }}>{equation.explanation}</p>
+            <p className="text-sm" style={{ color: '#9ca3af' }}>{equation.label}</p>
           </div>
         )}
       </div>
 
-      {isExpanded && equation.derivationSteps && equation.derivationSteps.length > 0 && (
+      {isExpanded && equation.storySteps && equation.storySteps.length > 0 && (
         <div className="mt-3 p-4 rounded-lg" style={{ backgroundColor: '#0a0e14', border: '1px solid #1a2235' }}>
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-display uppercase tracking-wider" style={{ color: '#00d4aa' }}>
               Equation Story
             </span>
             <div className="flex gap-1">
-              {equation.derivationSteps.map((_, i) => (
+              {equation.storySteps.map((_, i) => (
                 <button
                   key={i}
                   onClick={(e) => { e.stopPropagation(); setDerivationStep(i) }}
@@ -89,7 +89,7 @@ export default function EquationRenderer({ equation, onExpand }: EquationRendere
             </div>
           </div>
           <p className="text-sm" style={{ color: '#e8e0d0' }}>
-            {equation.derivationSteps[derivationStep]}
+            {equation.storySteps[derivationStep]}
           </p>
           <div className="flex gap-2 mt-3">
             <button
@@ -101,10 +101,10 @@ export default function EquationRenderer({ equation, onExpand }: EquationRendere
               ← Prev
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); setDerivationStep(s => Math.min((equation.derivationSteps?.length || 1) - 1, s + 1)) }}
+              onClick={(e) => { e.stopPropagation(); setDerivationStep(s => Math.min((equation.storySteps?.length || 1) - 1, s + 1)) }}
               className="px-2 py-1 text-xs rounded"
               style={{ backgroundColor: '#1a2235', color: '#9ca3af' }}
-              disabled={derivationStep === (equation.derivationSteps?.length || 1) - 1}
+              disabled={derivationStep === (equation.storySteps?.length || 1) - 1}
             >
               Next →
             </button>

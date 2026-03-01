@@ -13,12 +13,12 @@ export default function PaperList({ papers, onSelectPaper, selectedIds = [], pro
   return (
     <div className="space-y-3">
       {papers.map((paper) => {
-        const isSelected = selectedIds.includes(paper.id)
-        const status = processingStatus[paper.id]
+        const isSelected = selectedIds.includes(paper.id ?? '')
+        const status = processingStatus[paper.id ?? '']
 
         return (
           <div
-            key={paper.id}
+            key={paper.id ?? paper.title}
             onClick={() => onSelectPaper(paper)}
             className="p-4 rounded-xl cursor-pointer transition-all"
             style={{
@@ -54,7 +54,7 @@ export default function PaperList({ papers, onSelectPaper, selectedIds = [], pro
                 </p>
 
                 <p className="text-xs mt-1.5 line-clamp-2" style={{ color: '#9ca3af', fontFamily: 'IBM Plex Serif, serif' }}>
-                  {paper.abstract.substring(0, 150)}...
+                  {(paper.abstract ?? '').substring(0, 150)}...
                 </p>
               </div>
 

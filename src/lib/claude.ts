@@ -1,55 +1,104 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { ProcessedPaper, PaperMetadata } from './types'
+import { Paper, PaperMetadata, Section, Variable, Equation, Figure, Citation, EvidenceChain, NotebookCell, NotationWarning, TldrSentence } from './types'
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
-export async function processPaperWithClaude(paper: PaperMetadata, pdfText?: string): Promise<Partial<ProcessedPaper>> {
-  const textToProcess = pdfText || paper.abstract
+export async function rankByRelevance(
+  papers: PaperMetadata[],
+  query: string
+): Promise<Array<PaperMetadata & { relevanceScore: number; relevanceReason: string }>> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return papers.slice(0, 10).map(p => ({ ...p, relevanceScore: 50, relevanceReason: 'API key not configured' }))
+  }
 
-  const systemPrompt = `You are a scientific paper processing AI. Extract structured information from research papers and return valid JSON only.`
+  const prompt = `Given the research query: "${query}"
 
-  const userPrompt = `Process this research paper and extract structured information. Return a JSON object with this exact structure:
-{
-  "tldr": [{"sentence": "...", "sourceSentence": "..."}],
-  "readingTime": 15,
-  "sections": [
-    {
-      "id": "sec1",
-      "title": "Introduction", 
-      "content": "...",
-      "orientationSentence": "One sentence orienting the reader...",
-      "equations": [{"id": "eq1", "latex": "E = mc^2", "explanation": "...", "variables": ["E", "m", "c"], "derivationSteps": ["..."]}],
-      "figures": []
-    }
-  ],
-  "variables": [
-    {"symbol": "x", "definition": "...", "units": "...", "role": "...", "firstAppearsIn": "sec1", "occurrences": 5}
-  ],
-  "citations": [
-    {"id": "cite1", "title": "...", "authors": ["..."], "year": 2020, "url": "...", "type": "foundational"}
-  ],
-  "evidenceChains": [
-    {"claim": "...", "experiment": "...", "figure": "fig1", "result": "...", "conclusion": "..."}
-  ],
-  "githubRepos": [{"url": "...", "license": "MIT"}]
-}
+Rate each of the following papers for relevance on a scale of 0-100, and provide a one-sentence reason.
 
-Paper title: ${paper.title}
-Authors: ${paper.authors.join(', ')}
-Abstract: ${paper.abstract}
-${pdfText ? `Full text (truncated): ${pdfText.substring(0, 8000)}` : ''}
+Papers:
+${papers.map((p, i) => `${i + 1}. Title: "${p.title}"
+   Authors: ${p.authors?.slice(0, 3).join(', ')}
+   Abstract: ${(p.abstract || '').substring(0, 200)}`).join('\n\n')}
 
-Return ONLY valid JSON. Make the TL;DR exactly 3 sentences. Extract real equations from the paper if visible in the abstract/text.`
+Return a JSON array with one entry per paper in the same order:
+[{"score": 95, "reason": "Directly addresses the query by..."}, ...]
+
+Return ONLY valid JSON array.`
 
   try {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      messages: [
-        { role: 'user', content: userPrompt }
-      ],
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: prompt }],
+    })
+
+    const content = response.content[0]
+    if (content.type !== 'text') throw new Error('Unexpected response type')
+
+    const jsonMatch = content.text.match(/\[[\s\S]*\]/)
+    if (!jsonMatch) throw new Error('No JSON found in response')
+
+    const ratings = JSON.parse(jsonMatch[0]) as Array<{ score: number; reason: string }>
+
+    const ranked = papers.map((p, i) => ({
+      ...p,
+      relevanceScore: ratings[i]?.score ?? 50,
+      relevanceReason: ratings[i]?.reason ?? 'Relevance not determined',
+    }))
+
+    return ranked
+      .sort((a, b) => b.relevanceScore - a.relevanceScore)
+      .slice(0, 10)
+  } catch (error) {
+    console.error('rankByRelevance error:', error)
+    return papers.slice(0, 10).map(p => ({ ...p, relevanceScore: 50, relevanceReason: 'Ranking failed' }))
+  }
+}
+
+export async function parsePaper(
+  title: string,
+  authors: string[],
+  pdfText: string,
+  sourceUrl: string
+): Promise<Partial<Paper>> {
+  const systemPrompt = `You are a scientific paper processing AI. Extract structured information from research papers. Return ONLY valid JSON.`
+
+  const userPrompt = `Process this research paper and extract ALL structured information. Return a JSON object with this exact schema:
+
+{
+  "tldr": [{"sentence": "...", "sourceSentenceId": "block-id-from-text"}],
+  "sections": [{
+    "id": "sec-intro",
+    "title": "Introduction",
+    "level": 1,
+    "isAppendix": false,
+    "content": [{"id": "blk-1", "type": "paragraph", "raw": "..."}],
+    "marginNotes": []
+  }],
+  "variables": [{"symbol": "x", "name": "input variable", "definition": "...", "units": "...", "firstSeenSectionId": "sec-intro", "allOccurrences": ["blk-1", "blk-2"]}],
+  "equations": [{"id": "eq-1", "latex": "E=mc^2", "label": "Eq. 1", "storySteps": ["step1", "step2"], "relatedVariables": ["E", "m", "c"], "blockId": "blk-2"}],
+  "figures": [{"id": "fig-1", "url": "", "caption": "...", "label": "Figure 1", "referencedByBlockIds": ["blk-3"]}],
+  "citations": [{"id": "cite-1", "title": "...", "authors": ["..."], "year": 2020, "arxivId": "2001.xxxxx", "isFoundational": true}],
+  "notationWarnings": [{"symbol": "x", "sectionA": "sec-intro", "meaningA": "input", "sectionB": "sec-method", "meaningB": "output"}],
+  "evidenceChains": [{"claim": "...", "experiment": "...", "figureId": "fig-1", "statisticalResult": "p < 0.05", "conclusion": "...", "blockId": "blk-5"}],
+  "notebookCells": [{"id": "nb-1", "type": "markdown", "content": "# Overview", "sectionId": "sec-intro", "isEditable": false}],
+  "githubUrl": "https://github.com/..."
+}
+
+Paper: ${title}
+Authors: ${authors.join(', ')}
+Text (first 8000 chars): ${pdfText.substring(0, 8000)}
+
+Make TL;DR exactly 3 sentences with sourceSentenceId referencing actual block IDs from your sections.
+Extract real equations using LaTeX. Include at least 3 sections. Return ONLY valid JSON.`
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 6000,
+      messages: [{ role: 'user', content: userPrompt }],
       system: systemPrompt,
     })
 
@@ -59,110 +108,116 @@ Return ONLY valid JSON. Make the TL;DR exactly 3 sentences. Extract real equatio
     const jsonMatch = content.text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) throw new Error('No JSON found in response')
 
-    const parsed = JSON.parse(jsonMatch[0])
-    return parsed
+    return JSON.parse(jsonMatch[0])
   } catch (error) {
-    console.error('Claude processing error:', error)
+    console.error('parsePaper error:', error)
     return {
       tldr: [
-        { sentence: `This paper presents research on ${paper.title}.`, sourceSentence: paper.abstract.substring(0, 100) },
-        { sentence: 'The authors provide empirical evidence supporting their approach.', sourceSentence: paper.abstract.substring(100, 200) || paper.abstract },
-        { sentence: 'Results demonstrate significant improvements over baseline methods.', sourceSentence: paper.abstract.substring(200, 300) || paper.abstract },
+        { sentence: `This paper presents research on ${title}.`, sourceSentenceId: 'blk-abstract-1' },
+        { sentence: 'The authors provide empirical evidence for their approach.', sourceSentenceId: 'blk-abstract-2' },
+        { sentence: 'Results demonstrate significant improvements.', sourceSentenceId: 'blk-abstract-3' },
       ],
-      readingTime: 15,
-      sections: [
-        {
-          id: 'abstract',
-          title: 'Abstract',
-          content: paper.abstract,
-          orientationSentence: 'Overview of the paper\'s main contributions and findings.',
-        }
-      ],
+      sections: [{
+        id: 'sec-abstract',
+        title: 'Abstract',
+        level: 1,
+        isAppendix: false,
+        content: [{ id: 'blk-abstract-1', type: 'paragraph', raw: pdfText.substring(0, 500) }],
+        marginNotes: [],
+      }],
       variables: [],
+      equations: [],
+      figures: [],
       citations: [],
+      notationWarnings: [],
       evidenceChains: [],
+      notebookCells: [],
     }
   }
 }
 
 export async function findPrerequisiteConcept(paragraph: string, paperTitle: string): Promise<{
   concept: string
-  explanation: string
+  searchQuery: string
   sourceReference?: string
   paperTitle?: string
   paperUrl?: string
 }> {
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 1000,
-    messages: [{
-      role: 'user',
-      content: `A researcher is reading this paragraph from "${paperTitle}" and doesn't understand it:
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{
+        role: 'user',
+        content: `A researcher doesn't understand this paragraph from "${paperTitle}":
 
 "${paragraph}"
 
-Identify the single most likely prerequisite concept they are missing. Do NOT simplify the paragraph. Find the foundational concept or prior work they likely lack.
+Identify the single most important missing prerequisite concept. Return the original authors' exact terminology.
 
 Return JSON:
 {
-  "concept": "concept name",
-  "explanation": "what this concept is and why it's needed here (2-3 sentences)",
-  "sourceReference": "Original paper or textbook that introduced this concept",
+  "concept": "exact concept name as used in literature",
+  "searchQuery": "search query to find the foundational paper about this concept",
+  "sourceReference": "Original paper/textbook that introduced this concept",
   "paperTitle": "Exact title of key reference paper if applicable",
-  "paperUrl": "arXiv URL if known"
+  "paperUrl": "arXiv or DOI URL if known"
 }
 
-Return ONLY valid JSON.`
-    }]
-  })
+Return ONLY valid JSON.`,
+      }],
+    })
 
-  const content = response.content[0]
-  if (content.type !== 'text') throw new Error('Unexpected response type')
-
-  const jsonMatch = content.text.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) throw new Error('No JSON in response')
-
-  return JSON.parse(jsonMatch[0])
+    const content = response.content[0]
+    if (content.type !== 'text') throw new Error('Unexpected response type')
+    const jsonMatch = content.text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) throw new Error('No JSON in response')
+    return JSON.parse(jsonMatch[0])
+  } catch (error) {
+    console.error('findPrerequisiteConcept error:', error)
+    return { concept: 'prerequisite concept', searchQuery: paragraph.split(' ').slice(0, 5).join(' ') }
+  }
 }
 
-export async function generateNotebookCells(paper: PaperMetadata, codeContext?: string): Promise<Array<{
-  id: string
-  type: 'markdown' | 'code' | 'output'
-  content: string
-  language?: string
-}>> {
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 3000,
-    messages: [{
-      role: 'user',
-      content: `Generate a Jupyter notebook for this paper: "${paper.title}"
+export async function generateNotebookCells(
+  title: string,
+  sections: Array<{ id: string; title: string }>,
+  githubUrl?: string
+): Promise<NotebookCell[]> {
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 3000,
+      messages: [{
+        role: 'user',
+        content: `Generate a Jupyter notebook for: "${title}"
+${githubUrl ? `GitHub repository: ${githubUrl}` : ''}
+Sections: ${sections.map(s => s.title).join(', ')}
 
-Abstract: ${paper.abstract}
-${codeContext ? `Existing code context: ${codeContext.substring(0, 2000)}` : ''}
-
-Return JSON array of notebook cells:
+Return JSON array of notebook cells referencing actual section IDs:
 [
-  {"id": "cell1", "type": "markdown", "content": "# Paper Title\\n\\nWhat this notebook demonstrates..."},
-  {"id": "cell2", "type": "code", "content": "import numpy as np\\n...", "language": "python"},
-  {"id": "cell3", "type": "code", "content": "# Try it yourself: change parameters\\n...", "language": "python"}
+  {"id": "nb-1", "type": "markdown", "content": "# ${title}\\n\\nOverview...", "sectionId": "${sections[0]?.id || 'sec-intro'}", "isEditable": false},
+  {"id": "nb-2", "type": "code", "content": "import numpy as np\\n# Core algorithm", "sectionId": "${sections[1]?.id || 'sec-method'}", "isEditable": true},
+  {"id": "nb-3", "type": "code", "content": "# Try it yourself: modify parameters\\n", "sectionId": "${sections[sections.length - 1]?.id || 'sec-results'}", "isEditable": true}
 ]
 
-Include:
-1. Intro markdown cell explaining the paper's core contribution
-2. Core algorithm implementation (minimal, illustrative)
-3. "Try it yourself" cell with parameter exploration
-4. Visualization cell if applicable
+Return ONLY valid JSON array.`,
+      }],
+    })
 
-Return ONLY valid JSON array.`
+    const content = response.content[0]
+    if (content.type !== 'text') throw new Error('Unexpected response type')
+    const jsonMatch = content.text.match(/\[[\s\S]*\]/)
+    if (!jsonMatch) throw new Error('No JSON in response')
+    return JSON.parse(jsonMatch[0])
+  } catch (error) {
+    console.error('generateNotebookCells error:', error)
+    return [{
+      id: 'nb-1',
+      type: 'markdown',
+      content: `# ${title}\n\nThis notebook demonstrates the core concepts from the paper.`,
+      sectionId: sections[0]?.id || 'sec-intro',
+      isEditable: false,
     }]
-  })
-
-  const content = response.content[0]
-  if (content.type !== 'text') throw new Error('Unexpected response type')
-
-  const jsonMatch = content.text.match(/\[[\s\S]*\]/)
-  if (!jsonMatch) throw new Error('No JSON in response')
-
-  return JSON.parse(jsonMatch[0])
+  }
 }
