@@ -65,15 +65,6 @@ body {
   box-shadow: 0 0 20px rgba(0,212,170,0.1);
 }
 
-/* Blur to focus reveal */
-.equation-blur {
-  filter: blur(4px);
-  transition: filter 2.5s ease-in-out;
-}
-.equation-focused {
-  filter: blur(0);
-}
-
 /* Progressive reveal */
 .reveal-hidden {
   opacity: 0;

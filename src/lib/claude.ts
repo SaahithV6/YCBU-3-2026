@@ -89,15 +89,18 @@ export async function parsePaper(
 
 Paper: ${title}
 Authors: ${authors.join(', ')}
-Text (first 8000 chars): ${pdfText.substring(0, 8000)}
+Text (first 16000 chars): ${pdfText.substring(0, 16000)}
 
 Make TL;DR exactly 3 sentences with sourceSentenceId referencing actual block IDs from your sections.
-Extract real equations using LaTeX. Include at least 3 sections. Return ONLY valid JSON.`
+Extract real equations using LaTeX. Include at least 5 sections with 3-5 paragraphs each.
+Preserve actual statistics, percentages, p-values, and experimental details from the paper.
+Each paragraph should be 3-5 sentences with dense, paper-like content including specific numbers and findings.
+Return ONLY valid JSON.`
 
   try {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 6000,
+      max_tokens: 8000,
       messages: [{ role: 'user', content: userPrompt }],
       system: systemPrompt,
     })
@@ -184,40 +187,74 @@ export async function generateNotebookCells(
   sections: Array<{ id: string; title: string }>,
   githubUrl?: string
 ): Promise<NotebookCell[]> {
-  try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 3000,
-      messages: [{
-        role: 'user',
-        content: `Generate a Jupyter notebook for: "${title}"
+  const prompt = `Generate a Jupyter notebook for: "${title}"
 ${githubUrl ? `GitHub repository: ${githubUrl}` : ''}
 Sections: ${sections.map(s => s.title).join(', ')}
 
-Return JSON array of notebook cells referencing actual section IDs:
+Return JSON array of 5-8 notebook cells including markdown explanations, runnable Python code with numpy/matplotlib, and output cells:
 [
   {"id": "nb-1", "type": "markdown", "content": "# ${title}\\n\\nOverview...", "sectionId": "${sections[0]?.id || 'sec-intro'}", "isEditable": false},
-  {"id": "nb-2", "type": "code", "content": "import numpy as np\\n# Core algorithm", "sectionId": "${sections[1]?.id || 'sec-method'}", "isEditable": true},
+  {"id": "nb-2", "type": "code", "content": "import numpy as np\\nimport matplotlib.pyplot as plt\\n# Core algorithm", "sectionId": "${sections[1]?.id || 'sec-method'}", "isEditable": true},
   {"id": "nb-3", "type": "code", "content": "# Try it yourself: modify parameters\\n", "sectionId": "${sections[sections.length - 1]?.id || 'sec-results'}", "isEditable": true}
 ]
 
-Return ONLY valid JSON array.`,
-      }],
-    })
+Include runnable Python demonstrating the paper's core algorithms. Return ONLY valid JSON array.`
 
-    const content = response.content[0]
-    if (content.type !== 'text') throw new Error('Unexpected response type')
-    const jsonMatch = content.text.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) throw new Error('No JSON in response')
-    return JSON.parse(jsonMatch[0])
-  } catch (error) {
-    console.error('generateNotebookCells error:', error)
-    return [{
-      id: 'nb-1',
-      type: 'markdown',
-      content: `# ${title}\n\nThis notebook demonstrates the core concepts from the paper.`,
-      sectionId: sections[0]?.id || 'sec-intro',
-      isEditable: false,
-    }]
+  const maxRetries = 2
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: prompt }],
+      })
+
+      const content = response.content[0]
+      if (content.type !== 'text') throw new Error('Unexpected response type')
+
+      // Attempt to extract JSON array, repairing truncation if needed
+      let jsonText = content.text
+      const jsonMatch = jsonText.match(/\[[\s\S]*/)
+      if (!jsonMatch) throw new Error('No JSON array found in response')
+      jsonText = jsonMatch[0]
+
+      // Try to repair truncated JSON by finding the last complete object
+      try {
+        return JSON.parse(jsonText)
+      } catch {
+        // Count brackets to find the last complete array element boundary
+        let depth = 0
+        let lastCompleteEnd = -1
+        for (let i = 0; i < jsonText.length; i++) {
+          if (jsonText[i] === '{' || jsonText[i] === '[') depth++
+          else if (jsonText[i] === '}' || jsonText[i] === ']') {
+            depth--
+            if (depth === 1) lastCompleteEnd = i // completed an array element
+          }
+        }
+        if (lastCompleteEnd > 0) {
+          const repaired = jsonText.substring(0, lastCompleteEnd + 1) + ']'
+          return JSON.parse(repaired)
+        }
+        throw new Error('Could not repair truncated JSON')
+      }
+    } catch (error: unknown) {
+      const isRateLimit = error instanceof Error && error.message.includes('429')
+      if (attempt < maxRetries && isRateLimit) {
+        await new Promise(r => setTimeout(r, Math.pow(2, attempt + 1) * 1000))
+        continue
+      }
+      if (attempt === maxRetries) {
+        console.error('generateNotebookCells error:', error)
+      }
+    }
   }
+
+  return [{
+    id: 'nb-1',
+    type: 'markdown',
+    content: `# ${title}\n\nThis notebook demonstrates the core concepts from the paper.`,
+    sectionId: sections[0]?.id || 'sec-intro',
+    isEditable: false,
+  }]
 }

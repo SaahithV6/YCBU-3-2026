@@ -31,27 +31,37 @@ export async function POST(request: NextRequest) {
     // Stage 2: Parse with Claude
     const parsed = await parsePaperFromText(title, authors || [], pdfText, sourceUrl || pdfUrl)
 
-    // Stage 3: Extract variables with dedicated pass
+    // Stage 3 & 4: Extract variables and generate notebook in parallel
     let variables = parsed.variables || []
     let notationWarnings = parsed.notationWarnings || []
-    if (parsed.sections && parsed.sections.length > 0) {
-      try {
-        const extracted = await extractVariables(parsed.sections as Section[])
-        if (extracted.variables.length > 0) variables = extracted.variables
-        if (extracted.notationWarnings.length > 0) notationWarnings = extracted.notationWarnings
-      } catch (err) {
-        console.warn('Variable extraction failed:', err)
-      }
-    }
-
-    // Stage 4: Generate notebook
     let notebookCells = parsed.notebookCells || []
+
     if (parsed.sections && parsed.sections.length > 0) {
-      try {
-        const cells = await generateNotebook(title, parsed.sections as Section[], parsed.githubUrl)
-        if (cells.length > 0) notebookCells = cells
-      } catch (err) {
-        console.warn('Notebook generation failed:', err)
+      const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
+        new Promise<T>((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error('Timeout')), ms)
+          promise.then(
+            val => { clearTimeout(timer); resolve(val) },
+            err => { clearTimeout(timer); reject(err) }
+          )
+        })
+
+      const [variablesResult, notebookResult] = await Promise.allSettled([
+        withTimeout(extractVariables(parsed.sections as Section[]), 30000),
+        withTimeout(generateNotebook(title, parsed.sections as Section[], parsed.githubUrl), 30000),
+      ])
+
+      if (variablesResult.status === 'fulfilled') {
+        if (variablesResult.value.variables.length > 0) variables = variablesResult.value.variables
+        if (variablesResult.value.notationWarnings.length > 0) notationWarnings = variablesResult.value.notationWarnings
+      } else {
+        console.warn('Variable extraction failed:', variablesResult.reason)
+      }
+
+      if (notebookResult.status === 'fulfilled') {
+        if (notebookResult.value.length > 0) notebookCells = notebookResult.value
+      } else {
+        console.warn('Notebook generation failed:', notebookResult.reason)
       }
     }
 

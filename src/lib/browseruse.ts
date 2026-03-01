@@ -59,7 +59,7 @@ interface RawPaper {
 export async function searchWithBrowserUse(query: string): Promise<PaperMetadata[]> {
   const apiKey = process.env.BROWSER_USE_API_KEY
   if (!apiKey) {
-    throw new Error('BROWSER_USE_API_KEY not configured')
+    return []
   }
 
   const encodedQuery = encodeURIComponent(query)
@@ -107,7 +107,8 @@ Return ONLY valid JSON array. No other text.`
     })
 
     if (!createResponse.ok) {
-      throw new Error(`Browser Use API error: ${createResponse.status}`)
+      console.warn(`Browser Use API error: ${createResponse.status}`)
+      return []
     }
 
     const { task_id } = await createResponse.json()
@@ -161,6 +162,6 @@ Return ONLY valid JSON array. No other text.`
     throw new Error('Browser Use task timed out after 3 minutes')
   } catch (error) {
     console.error('Browser Use error:', error)
-    throw error
+    return []
   }
 }
