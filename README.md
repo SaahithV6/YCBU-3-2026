@@ -1,6 +1,6 @@
-# Living Papers v2
+# Combo Papers v2
 
-> *Living Papers v2 uses web agents to find the most relevant research papers and turn them into interactive, runnable, learnable web experiences — so researchers always stay at the bleeding edge.*
+> *Combo Papers v2 uses web agents to find the most relevant research papers and turn them into interactive, runnable, learnable web experiences — so researchers always stay at the bleeding edge.*
 
 Built for the **Browser Use × YC Hackathon, March 2026**.
 
@@ -8,7 +8,7 @@ Built for the **Browser Use × YC Hackathon, March 2026**.
 
 ## What Is This?
 
-Living Papers v2 is a **web agent-powered research intelligence platform** that autonomously surfaces, parses, and transforms scientific papers into deeply interactive learning environments.
+Combo Papers v2 is a **web agent-powered research intelligence platform** that autonomously surfaces, parses, and transforms scientific papers into deeply interactive learning environments.
 
 It eliminates the most counterproductive task in research: struggling to read and extract value from papers you barely have time to find.
 
@@ -66,7 +66,7 @@ Try it instantly — no API keys required:
 
 ## Architecture Overview
 
-Living Papers v2 uses a strict **client-server separation**: all computation, state, and secrets live on the server. The client is a pure rendering shell.
+Combo Papers v2 uses a strict **client-server separation**: all computation, state, and secrets live on the server. The client is a pure rendering shell.
 
 ```
 Browser Use Cloud ──► /api/search  ──► arXiv fallback
@@ -127,7 +127,7 @@ Open [http://localhost:3000](http://localhost:3000) and click the demo button.
 src/
 ├── app/
 │   ├── page.tsx              # Landing page — search + paper list
-│   ├── paper/[id]/page.tsx   # Living Page — full interactive paper view
+│   ├── paper/[id]/page.tsx   # Combo Page — full interactive paper view
 │   ├── thread/[id]/page.tsx  # Research Thread — multi-paper view
 │   └── api/
 │       ├── search/           # POST: web agent search + arXiv fallback
@@ -136,7 +136,7 @@ src/
 │       └── notebook/         # POST: notebook generation + Daytona sandbox
 ├── components/
 │   ├── Search/               # SearchInput, PaperList
-│   ├── LivingPage/           # All Living Page UI components
+│   ├── LivingPage/           # All Combo Page UI components
 │   ├── CitationGraph/        # D3 citation graph
 │   ├── RabbitHole/           # Rabbit hole navigation stack + panel
 │   ├── Notebook/             # Notebook cell rendering + embed
@@ -198,7 +198,7 @@ convex/                       # Real-time data layer
 
 ## Hackathon Context
 
-Living Papers v2 was built for the **Browser Use × YC Hackathon (March 2026)**. It uses:
+Combo Papers was built for the **Browser Use × YC Hackathon (March 2026)**. It uses:
 - **Browser Use Cloud** as the primary web agent for autonomous research paper discovery
 - **Daytona** for isolated, reproducible code sandbox environments
 
