@@ -32,7 +32,7 @@ export function useDepthMeter(paperId?: string) {
   const DEFAULT_PAPER_ID = '__default__'
   const currentPaperId = paperId || DEFAULT_PAPER_ID
 
-  const recordInteraction = useCallback((type: InteractionType, id?: string) => {
+  const recordInteraction = useCallback((type: InteractionType, _id?: string) => {
     setState(prev => {
       const paperState = prev[currentPaperId] || { interactions: {}, depth: 0 }
       const updated = {

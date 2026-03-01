@@ -36,7 +36,7 @@ export default function DontUnderstandButton({ paragraph, paperTitle }: DontUnde
       if (!response.ok) throw new Error('Request failed')
       const data = await response.json()
       setResult(data)
-    } catch (e) {
+    } catch {
       setError('Could not identify prerequisite. Try again.')
     } finally {
       setIsLoading(false)
