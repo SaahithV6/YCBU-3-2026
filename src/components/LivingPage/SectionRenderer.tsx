@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Section, Variable, ReadingMode, EvidenceChain as EvidenceChainType } from '@/lib/types'
+import { Section, Variable, Equation, ReadingMode, EvidenceChain as EvidenceChainType } from '@/lib/types'
 import EquationRenderer from './EquationRenderer'
 import FigureViewer from './FigureViewer'
 import DontUnderstandButton from './DontUnderstandButton'
@@ -12,6 +12,7 @@ import ProgressiveReveal from './ProgressiveReveal'
 interface SectionRendererProps {
   section: Section
   variables: Variable[]
+  equations?: Equation[]
   paperTitle: string
   readingMode: ReadingMode
   onEquationExpand?: () => void
@@ -23,40 +24,45 @@ function highlightVariables(text: string, variables: Variable[], onHover?: () =>
   if (!variables.length) return [text]
 
   const varMap = new Map(variables.map(v => [v.symbol, v]))
+  // Sort by length descending so longer symbols match first
   const sortedSymbols = Array.from(varMap.keys()).sort((a, b) => b.length - a.length)
 
+  // Build a single regex that matches any variable symbol at word boundaries
+  const escapedSymbols = sortedSymbols.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  // For single chars, require non-alphanumeric neighbors; for multi-char, use word boundaries
+  const patterns = escapedSymbols.map(s => {
+    if (s.length === 1) {
+      return `(?<![a-zA-Z0-9_])${s}(?![a-zA-Z0-9_])`
+    }
+    return `\\b${s}\\b`
+  })
+  const combinedRegex = new RegExp(`(${patterns.join('|')})`, 'g')
+
   const parts: React.ReactNode[] = []
-  let remaining = text
+  let lastIndex = 0
+  let match: RegExpExecArray | null
   let keyIndex = 0
 
-  while (remaining.length > 0) {
-    let earliestIndex = -1
-    let matchedSymbol = ''
-
-    for (const symbol of sortedSymbols) {
-      const idx = remaining.indexOf(symbol)
-      if (idx !== -1 && (earliestIndex === -1 || idx < earliestIndex)) {
-        earliestIndex = idx
-        matchedSymbol = symbol
-      }
+  while ((match = combinedRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index))
     }
-
-    if (earliestIndex === -1) {
-      parts.push(remaining)
-      break
+    const matchedSymbol = match[0]
+    const variable = varMap.get(matchedSymbol)
+    if (variable) {
+      parts.push(
+        <VariableHoverCard key={`var-${keyIndex++}`} symbol={matchedSymbol} variable={variable} onHover={onHover}>
+          {matchedSymbol}
+        </VariableHoverCard>
+      )
+    } else {
+      parts.push(matchedSymbol)
     }
+    lastIndex = combinedRegex.lastIndex
+  }
 
-    if (earliestIndex > 0) {
-      parts.push(remaining.substring(0, earliestIndex))
-    }
-
-    const variable = varMap.get(matchedSymbol)!
-    parts.push(
-      <VariableHoverCard key={`var-${keyIndex++}`} symbol={matchedSymbol} variable={variable} onHover={onHover}>
-        {matchedSymbol}
-      </VariableHoverCard>
-    )
-    remaining = remaining.substring(earliestIndex + matchedSymbol.length)
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex))
   }
 
   return parts.length > 0 ? parts : [text]
@@ -65,6 +71,7 @@ function highlightVariables(text: string, variables: Variable[], onHover?: () =>
 export default function SectionRenderer({
   section,
   variables,
+  equations = [],
   paperTitle,
   readingMode,
   onEquationExpand,
@@ -108,15 +115,21 @@ export default function SectionRenderer({
               </div>
             </div>
           )}
-          {block.type === 'equation' && readingMode !== 'skim' && (
-            <div
-              id={block.id}
-              className="equation-container p-4 rounded my-4 overflow-x-auto"
-              style={{ backgroundColor: '#0a0e14', border: '1px solid #1a2235' }}
-            >
-              <span dangerouslySetInnerHTML={{ __html: `\\[${block.raw}\\]` }} />
-            </div>
-          )}
+          {block.type === 'equation' && readingMode !== 'skim' && (() => {
+            const equation = equations.find(eq => eq.blockId === block.id)
+            if (equation) {
+              return <EquationRenderer equation={equation} onExpand={onEquationExpand} />
+            }
+            return (
+              <div
+                id={block.id}
+                className="equation-container p-4 rounded my-4 overflow-x-auto"
+                style={{ backgroundColor: '#0a0e14', border: '1px solid #1a2235' }}
+              >
+                <span dangerouslySetInnerHTML={{ __html: `\\[${block.raw}\\]` }} />
+              </div>
+            )
+          })()}
           {block.type === 'figure' && (
             <div id={block.id} className="my-4 text-sm italic" style={{ color: '#9ca3af' }}>
               {block.raw}

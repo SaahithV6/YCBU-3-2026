@@ -79,6 +79,28 @@ export default function PaperPage() {
 
   const sections = paper?.sections || []
 
+  // Track current section via IntersectionObserver
+  useEffect(() => {
+    if (!sections.length) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const idx = sections.findIndex(s => s.id === entry.target.id)
+            if (idx !== -1) setCurrentSectionIndex(idx)
+          }
+        }
+      },
+      // rootMargin: detect section when it occupies the middle 5% of the viewport
+      { rootMargin: '-40% 0px -55% 0px', threshold: 0 }
+    )
+    sections.forEach(s => {
+      const el = document.getElementById(s.id)
+      if (el) observer.observe(el)
+    })
+    return () => observer.disconnect()
+  }, [sections])
+
   const scrollToSection = (index: number) => {
     const clipped = Math.max(0, Math.min(index, sections.length - 1))
     setCurrentSectionIndex(clipped)
@@ -310,6 +332,7 @@ export default function PaperPage() {
             key={section.id}
             section={section}
             variables={paper.variables || []}
+            equations={paper.equations || []}
             paperTitle={paper.title}
             readingMode={readingMode}
             onEquationExpand={() => recordAction('expandedEquation')}

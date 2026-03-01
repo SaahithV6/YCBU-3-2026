@@ -43,7 +43,7 @@ export default function EquationRenderer({ equation, onExpand }: EquationRendere
       onClick={handleExpand}
     >
       <div
-        className={`p-4 rounded-lg transition-all duration-300 ${isFocused ? '' : 'equation-blur'}`}
+        className="p-4 rounded-lg transition-all duration-300"
         style={{
           backgroundColor: '#111827',
           border: `1px solid ${isFocused ? '#00d4aa33' : '#1a2235'}`,
@@ -57,12 +57,6 @@ export default function EquationRenderer({ equation, onExpand }: EquationRendere
         >
           {`\\[${equation.latex}\\]`}
         </div>
-
-        {!isFocused && (
-          <p className="text-xs text-center mt-2" style={{ color: '#9ca3af' }}>
-            Hover to focus · Click to expand
-          </p>
-        )}
 
         {isFocused && equation.label && (
           <div className="mt-3 pt-3" style={{ borderTop: '1px solid #1a2235' }}>
