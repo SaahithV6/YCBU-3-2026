@@ -29,7 +29,8 @@ function calculateDepth(interactions: Partial<Record<InteractionType, number>>):
 
 export function useDepthMeter(paperId?: string) {
   const [state, setState] = useState<DepthState>({})
-  const currentPaperId = paperId || '__default__'
+  const DEFAULT_PAPER_ID = '__default__'
+  const currentPaperId = paperId || DEFAULT_PAPER_ID
 
   const recordInteraction = useCallback((type: InteractionType, id?: string) => {
     setState(prev => {

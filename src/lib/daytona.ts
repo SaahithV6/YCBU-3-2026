@@ -28,26 +28,26 @@ export async function createSandbox(githubUrl: string): Promise<DaytonaSandbox> 
   const workspace = await createResponse.json()
   const workspaceId: string = workspace.id || workspace.workspaceId
 
-  // Poll until running
+  // Poll until running (check immediately, then wait)
   for (let i = 0; i < 30; i++) {
-    await new Promise(r => setTimeout(r, 3000))
-
     const statusResponse = await fetch(`${DAYTONA_API_URL}/workspace/${workspaceId}`, {
       headers: { 'Authorization': `Bearer ${apiKey}` },
     })
 
-    if (!statusResponse.ok) continue
+    if (statusResponse.ok) {
+      const status = await statusResponse.json()
 
-    const status = await statusResponse.json()
+      if (status.state === 'running' || status.status === 'running') {
+        const iframeUrl = status.iframeUrl || status.previewUrl || status.url || ''
+        return { sandboxId: workspaceId, iframeUrl }
+      }
 
-    if (status.state === 'running' || status.status === 'running') {
-      const iframeUrl = status.iframeUrl || status.previewUrl || status.url || ''
-      return { sandboxId: workspaceId, iframeUrl }
+      if (status.state === 'error' || status.status === 'error') {
+        throw new Error('Daytona workspace failed to start')
+      }
     }
 
-    if (status.state === 'error' || status.status === 'error') {
-      throw new Error('Daytona workspace failed to start')
-    }
+    await new Promise(r => setTimeout(r, 3000))
   }
 
   throw new Error('Daytona workspace timed out waiting to become ready')

@@ -44,5 +44,5 @@ export const get = query({
 export const list = query({
   args: { userId: v.string() },
   handler: async (ctx, args) =>
-    ctx.db.query("threads").collect().then(ts => ts.filter(t => t.userId === args.userId)),
+    ctx.db.query("threads").withIndex("by_user", q => q.eq("userId", args.userId)).collect(),
 });

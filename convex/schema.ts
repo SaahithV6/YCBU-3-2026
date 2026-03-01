@@ -10,7 +10,7 @@ export default defineSchema({
     paperIds: v.array(v.id("papers")),
     conceptMap: v.optional(v.any()),
     createdAt: v.number(),
-  }),
+  }).index("by_user", ["userId"]),
 
   papers: defineTable({
     threadId: v.id("threads"),

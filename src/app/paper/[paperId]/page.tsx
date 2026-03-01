@@ -53,6 +53,7 @@ export default function PaperPage() {
   }
 
   const sections = (paper.sections as Array<{ id: string; title: string; level?: number; content: Array<{ id: string; type: string; raw: string }>; isAppendix?: boolean; marginNotes?: unknown[] }>) || []
+  const tldr = (paper.tldr as Array<{ sentence: string; sourceSentenceId: string }> | undefined) ?? []
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
@@ -94,13 +95,13 @@ export default function PaperPage() {
           </p>
 
           {/* TL;DR */}
-          {paper.tldr && (paper.tldr as Array<{ sentence: string; sourceSentenceId: string }>).length > 0 && (
+          {tldr.length > 0 && (
             <div
               className="p-4 rounded-lg mb-6"
               style={{ backgroundColor: 'var(--teal-dim)', border: '1px solid rgba(0,212,170,0.2)' }}
             >
               <p className="text-xs font-mono mb-2" style={{ color: 'var(--teal)' }}>TL;DR</p>
-              {(paper.tldr as Array<{ sentence: string; sourceSentenceId: string }>).map((t, i) => (
+              {tldr.map((t, i) => (
                 <p key={i} className="text-sm mb-1 last:mb-0" style={{ color: 'var(--text)' }}>
                   <a
                     href={`#${t.sourceSentenceId}`}
