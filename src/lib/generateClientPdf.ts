@@ -25,6 +25,7 @@ export async function generateAndUploadPdf(
   const imgWidth = 210 // A4 width in mm
   const imgHeight = (canvas.height * imgWidth) / canvas.width
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const imgData = canvas.toDataURL('image/jpeg', 0.85)
 
   // Split into pages if taller than A4
   const pageHeight = 297 // A4 height in mm
@@ -33,7 +34,7 @@ export async function generateAndUploadPdf(
 
   while (remaining > 0) {
     if (position > 0) pdf.addPage()
-    pdf.addImage(canvas.toDataURL('image/jpeg', 0.85), 'JPEG', 0, -position, imgWidth, imgHeight)
+    pdf.addImage(imgData, 'JPEG', 0, -position, imgWidth, imgHeight)
     position += pageHeight
     remaining -= pageHeight
   }

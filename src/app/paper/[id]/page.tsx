@@ -260,7 +260,8 @@ export default function PaperPage() {
     }
   }
 
-  const handleCitationClick = (citation: Citation) => {    const item: RabbitHoleItem = {
+  const handleCitationClick = (citation: Citation) => {
+    const item: RabbitHoleItem = {
       id: citation.id,
       title: citation.title,
       type: 'paper',

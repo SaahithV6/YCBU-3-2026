@@ -17,6 +17,7 @@ export default function SavedPapersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/papers/saved')
@@ -31,13 +32,16 @@ export default function SavedPapersPage() {
 
   const handleDelete = async (id: string) => {
     setDeletingId(id)
+    setDeleteError(null)
     try {
       const res = await fetch(`/api/papers/${encodeURIComponent(id)}/pdf`, { method: 'DELETE' })
       if (res.ok) {
         setPapers((prev) => prev.filter((p) => p.id !== id))
+      } else {
+        setDeleteError('Failed to delete PDF')
       }
     } catch {
-      // ignore
+      setDeleteError('Failed to delete PDF')
     } finally {
       setDeletingId(null)
     }
@@ -75,6 +79,12 @@ export default function SavedPapersPage() {
         {error && (
           <div className="py-8 text-center">
             <p className="text-amber text-sm">{error}</p>
+          </div>
+        )}
+
+        {deleteError && (
+          <div className="mb-4 px-3 py-2 rounded border border-red-900/40 bg-red-900/10 text-xs text-red-400">
+            {deleteError}
           </div>
         )}
 

@@ -66,11 +66,14 @@ export async function GET(
     const paper = await db.collection('papers').findOne({ id })
     const title = (paper?.title as string) || id
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    // Use RFC 5987 encoding to safely embed the filename in the header
+    const safeFilename = `${slug || 'paper'}.pdf`
+    const encodedFilename = encodeURIComponent(safeFilename)
 
     return new NextResponse(result.buffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="${slug}.pdf"`,
+        'Content-Disposition': `inline; filename="${safeFilename}"; filename*=UTF-8''${encodedFilename}`,
         'Content-Length': result.buffer.length.toString(),
       },
     })
