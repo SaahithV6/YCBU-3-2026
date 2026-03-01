@@ -62,7 +62,19 @@ export default function PaperPage() {
       // ignore
     }
 
+    // Safety timeout: stop loading after 30 s rather than spinning forever
+    let mounted = true
+    const timeoutId = setTimeout(() => {
+      if (mounted) setIsLoading(false)
+    }, 30000)
+
+    // No server-side cache to query without original metadata — stop loading now
     setIsLoading(false)
+
+    return () => {
+      mounted = false
+      clearTimeout(timeoutId)
+    }
   }, [params.id])
 
   const sections = paper?.sections || []
