@@ -1,13 +1,13 @@
-# Living Papers v2 — Design Document
+# Combo Papers — Design Document
 ### *Accelerating Researchers to the Bleeding Edge*
 
 ---
 
 ## Vision
 
-Living Papers v2 is a **web agent-powered research intelligence platform** that autonomously surfaces, parses, and transforms scientific papers into deeply interactive, notebook-embedded learning environments. It exists to eliminate the most counterproductive task in research: struggling to read and extract value from papers you barely have time to find.
+Combo Papers is a **web agent-powered research intelligence platform** that autonomously surfaces, parses, and transforms scientific papers into deeply interactive, notebook-embedded learning environments. It exists to eliminate the most counterproductive task in research: struggling to read and extract value from papers you barely have time to find.
 
-**One-sentence pitch:** *Living Papers v2 uses web agents to find the most relevant research papers and turn them into interactive, runnable, learnable web experiences — so researchers always stay at the bleeding edge.*
+**One-sentence pitch:** *Combo Papers uses web agents to find the most relevant research papers and turn them into interactive, runnable, learnable web experiences — so researchers always stay at the bleeding edge.*
 
 ---
 
@@ -36,7 +36,7 @@ Living Papers v2 is a **web agent-powered research intelligence platform** that 
 
 ### Client-Server Split
 
-Living Papers v2 is built on a strict **client-server separation**. All computation, state, and secrets live on the server. The client is a pure rendering shell.
+Combo Papers is built on a strict **client-server separation**. All computation, state, and secrets live on the server. The client is a pure rendering shell.
 
 **Why this matters:** Web agent crawling, PDF extraction, Claude API calls, GitHub repo cloning, Daytona sandbox provisioning, and citation graph construction are all I/O-bound, long-running, and secret-dependent. None of it belongs in a browser. Exposing it client-side would leak API keys, hit CORS walls on every academic domain, and block the UI thread entirely.
 
@@ -134,7 +134,7 @@ Each paper becomes a **Living Page** with these sections:
 
 ### The Core Principle: Stickiness Without Abstraction
 
-Short-form content is addictive because the reward is always just ahead of you. In Living Papers v2 the reward should be the feeling of *genuinely understanding something you didn't understand before* — and the design must make that feeling **felt**, not just cognitively registered. Critically, none of this is achieved by simplifying or summarizing away granularity. The granularity is already in the paper. The job of the UI is to make the paper's own structure, evidence, notation, and derivations **visible and navigable** in ways the PDF format cannot.
+Short-form content is addictive because the reward is always just ahead of you. In Combo Papers the reward should be the feeling of *genuinely understanding something you didn't understand before* — and the design must make that feeling **felt**, not just cognitively registered. Critically, none of this is achieved by simplifying or summarizing away granularity. The granularity is already in the paper. The job of the UI is to make the paper's own structure, evidence, notation, and derivations **visible and navigable** in ways the PDF format cannot.
 
 ---
 
@@ -337,4 +337,4 @@ A **Research Thread** is a named collection of Living Pages around a topic. Feat
 
 ---
 
-*Living Papers v2 — Built at Browser Use × YC Hackathon, March 2026*
+*Combo Papers — Built at Browser Use × YC Hackathon, March 2026*

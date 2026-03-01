@@ -1,4 +1,4 @@
-# Living Papers v2 — Architecture
+# Combo Papers — Architecture
 
 A technical deep-dive into how the system is built and why.
 
@@ -6,7 +6,7 @@ A technical deep-dive into how the system is built and why.
 
 ## Core Philosophy: Client is a Rendering Shell
 
-Living Papers v2 uses a strict **client-server separation**. All computation, state, and secrets live on the server. The client is a pure rendering shell.
+Combo Papers uses a strict **client-server separation**. All computation, state, and secrets live on the server. The client is a pure rendering shell.
 
 **Why this matters:**
 - Web agent crawling hits arbitrary academic domains — impossible from a browser due to CORS
@@ -215,7 +215,7 @@ NotebookEmbed              — notebook cells + sandbox iframe
 
 ## State Management
 
-Living Papers v2 uses three layers of state:
+Combo Papers uses three layers of state:
 
 | Layer | What it stores | Why |
 |---|---|---|

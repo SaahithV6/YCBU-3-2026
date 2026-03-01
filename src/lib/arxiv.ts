@@ -6,7 +6,7 @@ export async function searchArxiv(query: string, maxResults = 10): Promise<Paper
   
   try {
     const response = await fetch(url, {
-      headers: { 'User-Agent': 'LivingPapersV2/1.0' },
+      headers: { 'User-Agent': 'ComboPapers/1.0' },
     })
     
     if (!response.ok) throw new Error(`arXiv API error: ${response.status}`)
