@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { RabbitHoleItem } from '@/lib/types'
 
 interface RabbitHolePanelProps {
@@ -14,9 +14,33 @@ interface TermInfo {
   context: string
 }
 
+interface ResolvedPaper {
+  title: string
+  abstract?: string
+  url?: string
+  pdfUrl?: string
+  doi?: string
+  year?: number
+  authors?: string[]
+}
+
 export default function RabbitHolePanel({ item, onGoDeeper, onClose }: RabbitHolePanelProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [termInfo, setTermInfo] = useState<TermInfo | null>(null)
+  const [resolvedPaper, setResolvedPaper] = useState<ResolvedPaper | null>(null)
+
+  // Resolve citation metadata when item is a paper type
+  useEffect(() => {
+    if (item.type !== 'paper' || !item.title) return
+    let cancelled = false
+    fetch(`/api/citation-lookup?title=${encodeURIComponent(item.title)}`)
+      .then(r => r.json())
+      .then((data: { paper?: ResolvedPaper }) => {
+        if (!cancelled && data.paper) setResolvedPaper(data.paper)
+      })
+      .catch(() => {/* citation lookup unavailable */})
+    return () => { cancelled = true }
+  }, [item.type, item.title])
 
   const handleGoDeeper = async () => {
     setIsLoading(true)
@@ -60,6 +84,44 @@ export default function RabbitHolePanel({ item, onGoDeeper, onClose }: RabbitHol
       <h3 className="font-display text-base mb-2" style={{ color: '#e8e0d0', fontFamily: 'Syne, sans-serif' }}>
         {item.title}
       </h3>
+
+      {/* Resolved paper metadata */}
+      {resolvedPaper && (
+        <div className="mb-3 space-y-1.5">
+          {resolvedPaper.abstract && (
+            <p className="text-xs leading-relaxed" style={{ color: '#9ca3af' }}>
+              {resolvedPaper.abstract.substring(0, 200)}{resolvedPaper.abstract.length > 200 ? '…' : ''}
+            </p>
+          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {resolvedPaper.year && (
+              <span className="text-xs" style={{ color: '#6b7280' }}>{resolvedPaper.year}</span>
+            )}
+            {resolvedPaper.url && (
+              <a
+                href={resolvedPaper.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs underline"
+                style={{ color: '#00d4aa' }}
+              >
+                View ↗
+              </a>
+            )}
+            {resolvedPaper.pdfUrl && resolvedPaper.pdfUrl !== resolvedPaper.url && (
+              <a
+                href={resolvedPaper.pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs underline"
+                style={{ color: '#00d4aa' }}
+              >
+                PDF ↗
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
       {termInfo && (
         <p className="text-xs mb-3" style={{ color: '#9ca3af' }}>

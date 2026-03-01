@@ -145,6 +145,13 @@ export interface RabbitHoleItem {
   term?: string
 }
 
+export interface ConceptMapNode {
+  id: string
+  label: string
+  type: 'paper' | 'variable' | 'rabbithole'
+  sectionId?: string
+}
+
 // Legacy compatibility alias
 export type ProcessedPaper = Paper
 export type PaperMetadata = Pick<Paper, "title" | "authors" | "pdfUrl" | "sourceUrl" | "sourceName" | "relevanceScore" | "relevanceReason"> & { id?: string; abstract?: string; url?: string; venue?: string; year?: number; doi?: string; arxivId?: string; githubUrl?: string; citationCount?: number }

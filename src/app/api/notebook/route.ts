@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateNotebookCells } from '@/lib/claude'
 import { createWorkspace } from '@/lib/daytona'
-import { PaperMetadata } from '@/lib/types'
+import { ProcessedPaper } from '@/lib/types'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   try {
-    const { paper, action } = await request.json() as { paper: PaperMetadata; action: 'create' | 'get' }
+    const { paper, action } = await request.json() as { paper: ProcessedPaper & { id?: string }; action: 'create' | 'get' }
 
     if (!paper || !paper.id) {
       return NextResponse.json({ error: 'Paper data is required' }, { status: 400 })
@@ -22,9 +22,10 @@ export async function POST(request: NextRequest) {
     // Generate notebook cells with Claude
     let cells
     if (process.env.ANTHROPIC_API_KEY) {
-      cells = await generateNotebookCells(paper.title, [], undefined)
+      const sections = (paper.sections || []).map(s => ({ id: s.id, title: s.title }))
+      cells = await generateNotebookCells(paper.title, sections, paper.githubUrl)
     } else {
-      // Demo fallback cells
+      // Demo fallback cells — always include at least 2 code cells
       cells = [
         {
           id: 'cell1',
@@ -62,6 +63,19 @@ print(f"Configuration: lr={learning_rate}, hidden={hidden_dims}, sparsity={spars
           isEditable: true,
         }
       ]
+    }
+
+    // Persist notebook cells to MongoDB (non-blocking)
+    if (paper.id && cells.length > 0) {
+      import('@/lib/mongodb')
+        .then(async ({ getDb }) => {
+          const db = await getDb()
+          await db.collection('papers').updateOne(
+            { id: paper.id },
+            { $set: { notebookCells: cells, updatedAt: Date.now() } }
+          )
+        })
+        .catch((e: unknown) => console.warn('MongoDB notebook persist failed:', e))
     }
 
     // Try to create Daytona workspace
