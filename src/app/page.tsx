@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import SearchInput from '@/components/Search/SearchInput'
 import PaperList from '@/components/Search/PaperList'
