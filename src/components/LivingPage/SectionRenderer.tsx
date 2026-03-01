@@ -73,8 +73,6 @@ export default function SectionRenderer({
 }: SectionRendererProps) {
   const [activeParagraph, setActiveParagraph] = useState<number | null>(null)
 
-  const paragraphBlocks = section.content.filter(b => b.type === 'paragraph')
-
   return (
     <section id={section.id} className="mb-12">
       <ProgressiveReveal>

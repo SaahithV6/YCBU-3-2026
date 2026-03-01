@@ -18,7 +18,7 @@ export default function PaperList({ papers, onSelectPaper, selectedIds = [], pro
 
         return (
           <div
-            key={paper.id ?? paper.title}
+            key={paper.id ?? `${paper.title}-${paper.sourceUrl}`}
             onClick={() => onSelectPaper(paper)}
             className="p-4 rounded-xl cursor-pointer transition-all"
             style={{

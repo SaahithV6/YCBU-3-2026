@@ -6,6 +6,9 @@ import { searchWithBrowserUse } from '@/lib/browseruse'
 export const runtime = 'nodejs'
 export const maxDuration = 120
 
+// Minimum similarity score to use a cached Supermemory result
+const MEMORY_MATCH_THRESHOLD = 0.8
+
 export async function POST(request: NextRequest) {
   try {
     const { paragraph, paperTitle } = await request.json()
@@ -19,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     // Step 2: Check Supermemory for existing knowledge
     const memoryResults = await querySupermemory(prerequisite.searchQuery)
-    if (memoryResults.length > 0 && memoryResults[0].score > 0.8) {
+    if (memoryResults.length > 0 && memoryResults[0].score > MEMORY_MATCH_THRESHOLD) {
       return NextResponse.json({
         concept: prerequisite.concept,
         source: 'memory',
