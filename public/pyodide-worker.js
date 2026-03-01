@@ -21,12 +21,22 @@ import warnings
 warnings.filterwarnings('ignore', message='.*font cache.*')
 warnings.filterwarnings('ignore', message='.*FigureCanvasAgg is non-interactive.*')
 import matplotlib.pyplot as plt
-import sys, io
+import sys, io, base64
 
-# Patch plt.show() globally so it is a silent no-op in the Agg backend
-def _silent_show(*args, **kwargs):
-    pass
-plt.show = _silent_show
+# Shared helper: save a figure to stdout as __IMG__:base64
+def _save_fig_to_stdout(fig):
+    _buf = io.BytesIO()
+    fig.savefig(_buf, format='png', bbox_inches='tight', dpi=100)
+    _buf.seek(0)
+    print("__IMG__:" + base64.b64encode(_buf.read()).decode('utf-8'))
+    _buf.close()
+
+# Patch plt.show() to capture the current figure and emit it as a base64 PNG to stdout
+def _capture_show(*args, **kwargs):
+    _save_fig_to_stdout(plt.gcf())
+    plt.clf()
+
+plt.show = _capture_show
 `)
   pyodideReady = true
   self.postMessage({ type: 'ready' })
@@ -93,6 +103,13 @@ sys.stderr.write("Note: some packages could not be loaded in the browser environ
       // Run user code
       pyodideInstance.runPython(code)
 
+      // Auto-capture any matplotlib figures that were not explicitly shown via plt.show()
+      pyodideInstance.runPython(`
+for _fn in plt.get_fignums():
+    _save_fig_to_stdout(plt.figure(_fn))
+plt.close('all')
+`)
+
       // Collect output
       const stdout = pyodideInstance.runPython('_stdout_buf.getvalue()')
       let stderr = pyodideInstance.runPython('_stderr_buf.getvalue()')
@@ -105,19 +122,21 @@ sys.stderr.write("Note: some packages could not be loaded in the browser environ
         .join('\n')
         .trim()
 
-      // Restore stdout/stderr
+      // Restore stdout/stderr and plt.show
       pyodideInstance.runPython(`
 sys.stdout = sys.__stdout__
 sys.stderr = sys.__stderr__
+plt.show = _capture_show
 `)
 
       self.postMessage({ type: 'result', stdout, stderr, id })
     } catch (err) {
-      // Attempt to restore stdout/stderr even on error
+      // Attempt to restore stdout/stderr and plt.show even on error
       try {
         pyodideInstance.runPython(`
 sys.stdout = sys.__stdout__
 sys.stderr = sys.__stderr__
+plt.show = _capture_show
 `)
       } catch (_) { /* ignore */ }
       self.postMessage({ type: 'error', error: String(err), id })
