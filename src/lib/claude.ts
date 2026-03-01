@@ -258,3 +258,48 @@ Include runnable Python demonstrating the paper's core algorithms. Return ONLY v
     isEditable: false,
   }]
 }
+
+/**
+ * Feed extracted papers into Claude for synthesis.
+ * Answers a research question by synthesizing findings across multiple papers.
+ */
+export async function synthesizePapers(papers: PaperMetadata[], researchQuestion: string): Promise<string> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return 'Synthesis unavailable: ANTHROPIC_API_KEY is not configured.'
+  }
+
+  if (papers.length === 0) {
+    return 'No papers provided for synthesis.'
+  }
+
+  const context = papers
+    .slice(0, 10)
+    .map(p => {
+      const abstract = p.abstract || ''
+      // Truncate at word boundary to avoid cutting mid-sentence
+      const truncated = abstract.length > 500
+        ? abstract.substring(0, 500).replace(/\s+\S*$/, '') + '…'
+        : abstract
+      return `Title: ${p.title}\nAuthors: ${(p.authors || []).slice(0, 5).join(', ')}\nAbstract: ${truncated}`
+    })
+    .join('\n\n---\n\n')
+
+  const response = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 2000,
+    messages: [{
+      role: 'user',
+      content: `You are a research assistant. Based on these papers:
+
+${context}
+
+Answer this research question: ${researchQuestion}
+
+Synthesize findings, highlight key contributions, and note any contradictions or open questions.`,
+    }],
+  })
+
+  const content = response.content[0]
+  if (content.type !== 'text') throw new Error('Unexpected response type')
+  return content.text
+}

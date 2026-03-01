@@ -166,6 +166,7 @@ convex/                       # Real-time data layer
 | `/api/process` | POST | `{ paper: PaperMetadata }` | `{ paper: ProcessedPaper }` |
 | `/api/prerequisite` | POST | `{ paragraph: string, paperTitle: string }` | `{ concept: string, ... }` |
 | `/api/notebook` | POST | `{ paper: PaperMetadata, repoUrl?: string }` | `{ cells: NotebookCell[], sandboxUrl?: string }` |
+| `/api/synthesize` | POST | `{ papers: PaperMetadata[], researchQuestion: string }` | `{ synthesis: string }` |
 
 ---
 

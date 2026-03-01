@@ -31,12 +31,16 @@ User browser
          │
     ┌────┴────────────────────────────────────────────────┐
     │  /api/search                                        │
-    │    ├── Browser Use Cloud (primary)                  │
+    │    ├── Browser Use Cloud v3 (primary, structured)   │
+    │    ├── Browser Use Cloud v1 (fallback)              │
     │    └── arXiv REST API (fallback)                    │
     │                                                     │
     │  /api/process                                       │
     │    ├── Demo data check (demo-fallback.json)         │
     │    └── Anthropic Claude API                         │
+    │                                                     │
+    │  /api/synthesize                                    │
+    │    └── Anthropic Claude API (multi-paper synthesis) │
     │                                                     │
     │  /api/prerequisite                                  │
     │    └── Anthropic Claude API                         │
@@ -63,11 +67,12 @@ User browser
 ```
 1. User types query in SearchInput
 2. POST /api/search { query }
-3. Server tries Browser Use Cloud → searchWithBrowserUse()
-4. If BU fails/unavailable → searchArxiv() fallback
-5. If query matches "mechanistic interpretability" → demo-fallback.json
-6. Returns { papers: PaperMetadata[], source: string }
-7. Client renders PaperList with checkboxes
+3. Server tries Browser Use v3 API → searchWithBrowserUseV3() (structured output_schema)
+4. If v3 fails → falls back to v1 API → searchWithBrowserUse()
+5. If BU fails/unavailable → searchArxiv() fallback
+6. If query matches "mechanistic interpretability" → demo-fallback.json
+7. Returns { papers: PaperMetadata[], source: string }
+8. Client renders PaperList with checkboxes
 ```
 
 ### Paper Selection → Living Page
@@ -133,8 +138,22 @@ The client subscribes to Convex queries to get live updates as papers process. T
 **Logic:**
 1. Normalize query to lowercase
 2. If query contains "mechanistic interpretability" → return demo data
-3. Try `searchWithBrowserUse(query)` from `src/lib/browseruse.ts`
-4. On failure → `searchArxiv(query)` from `src/lib/arxiv.ts`
+3. Try `searchWithBrowserUseV3(query)` (v3 API with structured `output_schema`)
+4. If v3 fails → try `searchWithBrowserUse(query)` v1 fallback
+5. On failure → `searchArxiv(query)` from `src/lib/arxiv.ts`
+
+---
+
+### `POST /api/synthesize`
+
+**Request:** `{ papers: PaperMetadata[], researchQuestion: string }`
+
+**Response:** `{ synthesis: string }`
+
+**Logic:**
+- Calls `synthesizePapers(papers, researchQuestion)` from `src/lib/claude.ts`
+- Builds context from up to 10 papers (title, authors, abstract)
+- Returns a synthesized answer that highlights key contributions and contradictions
 
 ---
 
@@ -231,13 +250,16 @@ Living Papers v2 uses three layers of state:
 
 ### Browser Use Cloud (`src/lib/browseruse.ts`)
 - Called by `/api/search`
-- Performs autonomous multi-source academic search
-- Returns `PaperMetadata[]` with relevance scores
+- **v3 API (primary):** `searchWithBrowserUseV3(query)` — uses `output_schema` for structured JSON output
+- **v1 API (fallback):** `searchWithBrowserUse(query)` — text-parsing fallback when v3 is unavailable
+- **Browser API:** `createBrowserSession()` / `stopBrowserSession()` — provisions a remote browser with CDP URL for custom Playwright-based scraping
+- Returns `PaperMetadata[]` covering 11 open-access sources
 
 ### Anthropic Claude (`src/lib/claude.ts`)
-- `processPaperWithClaude(paper)` — full paper enrichment
+- `parsePaper(title, authors, pdfText, sourceUrl)` — full paper enrichment
 - `findPrerequisiteConcept(paragraph, paperTitle)` — prerequisite detection
-- `generateNotebookCells(paper, repoUrl?)` — notebook generation
+- `generateNotebookCells(title, sections, githubUrl?)` — notebook generation
+- `synthesizePapers(papers, researchQuestion)` — multi-paper synthesis pipeline
 - All calls are server-side only (API key never exposed to client)
 
 ### Daytona (`src/lib/daytona.ts`)
