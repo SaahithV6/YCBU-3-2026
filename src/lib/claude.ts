@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { Paper, PaperMetadata, Section, Variable, Equation, Figure, Citation, EvidenceChain, NotebookCell, NotationWarning, TldrSentence } from './types'
+import { Paper, PaperMetadata, NotebookCell } from './types'
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -61,7 +61,7 @@ export async function parsePaper(
   title: string,
   authors: string[],
   pdfText: string,
-  sourceUrl: string
+  _sourceUrl: string
 ): Promise<Partial<Paper>> {
   const systemPrompt = `You are a scientific paper processing AI. Extract structured information from research papers. Return ONLY valid JSON.`
 

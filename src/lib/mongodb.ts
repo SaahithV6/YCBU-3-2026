@@ -6,9 +6,8 @@ const options = {}
 let client: MongoClient
 let clientPromise: Promise<MongoClient>
 
-declare global {
-  var _mongoClientPromise: Promise<MongoClient> | undefined
-}
+type GlobalWithMongo = typeof globalThis & { _mongoClientPromise?: Promise<MongoClient> }
+const g = globalThis as GlobalWithMongo
 
 if (!uri) {
   console.warn('MONGODB_URI not set; MongoDB features disabled')
@@ -16,11 +15,11 @@ if (!uri) {
 
 if (uri) {
   if (process.env.NODE_ENV === 'development') {
-    if (!global._mongoClientPromise) {
+    if (!g._mongoClientPromise) {
       client = new MongoClient(uri, options)
-      global._mongoClientPromise = client.connect()
+      g._mongoClientPromise = client.connect()
     }
-    clientPromise = global._mongoClientPromise
+    clientPromise = g._mongoClientPromise
   } else {
     client = new MongoClient(uri, options)
     clientPromise = client.connect()

@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Section, Variable, Equation, ReadingMode, EvidenceChain as EvidenceChainType } from '@/lib/types'
 import EquationRenderer from './EquationRenderer'
-import FigureViewer from './FigureViewer'
 import DontUnderstandButton from './DontUnderstandButton'
 import VariableHoverCard from './VariableHoverCard'
 import EvidenceChain from './EvidenceChain'
