@@ -97,7 +97,7 @@ Return ONLY a JSON array with up to 20 unique papers:
 Return ONLY valid JSON array. No other text.`
 
   try {
-    const createResponse = await fetch(`${BROWSER_USE_API_URL}/run-task`, {
+    const createResponse = await fetch(`${BROWSER_USE_API_URL}/task`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -111,12 +111,12 @@ Return ONLY valid JSON array. No other text.`
       return []
     }
 
-    const { task_id } = await createResponse.json()
+    const { id: task_id } = await createResponse.json()
 
     for (let i = 0; i < 45; i++) {
       await new Promise(r => setTimeout(r, 4000))
 
-      const statusResponse = await fetch(`${BROWSER_USE_API_URL}/task/${task_id}`, {
+      const statusResponse = await fetch(`${BROWSER_USE_API_URL}/task/${task_id}/status`, {
         headers: { 'Authorization': `Bearer ${apiKey}` },
       })
 
@@ -124,10 +124,10 @@ Return ONLY valid JSON array. No other text.`
 
       const status = await statusResponse.json()
 
-      if (status.status === 'completed' && status.result) {
+      if (status.status === 'finished' && status.output) {
         let papers: RawPaper[] = []
         try {
-          const jsonMatch = status.result.match(/\[[\s\S]*\]/)
+          const jsonMatch = status.output.match(/\[[\s\S]*\]/)
           if (jsonMatch) {
             papers = JSON.parse(jsonMatch[0]) as RawPaper[]
           }

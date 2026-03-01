@@ -91,6 +91,7 @@ export type PaperSourceName =
   | "arXiv"
   | "CORE"
   | "OA.mg"
+  | "OpenAlex"
   | "PubMed Central"
   | "Unpaywall"
   | "DOAJ"
@@ -146,4 +147,4 @@ export interface RabbitHoleItem {
 
 // Legacy compatibility alias
 export type ProcessedPaper = Paper
-export type PaperMetadata = Pick<Paper, "title" | "authors" | "pdfUrl" | "sourceUrl" | "sourceName" | "relevanceScore" | "relevanceReason"> & { id?: string; abstract?: string; url?: string; venue?: string; year?: number; doi?: string; arxivId?: string; githubUrl?: string }
+export type PaperMetadata = Pick<Paper, "title" | "authors" | "pdfUrl" | "sourceUrl" | "sourceName" | "relevanceScore" | "relevanceReason"> & { id?: string; abstract?: string; url?: string; venue?: string; year?: number; doi?: string; arxivId?: string; githubUrl?: string; citationCount?: number }

@@ -112,13 +112,15 @@ export default function NotebookEmbed({ paper, isOpen, onClose, onCellRun }: Not
       </div>
 
       {/* Footer */}
-      {notebook?.sandboxUrl && (
-        <div className="px-4 py-2 text-xs border-t border-surface-2 text-text-muted">
+      <div className="px-4 py-2 text-xs border-t border-surface-2 text-text-muted">
+        {notebook?.sandboxUrl ? (
           <a href={notebook.sandboxUrl} target="_blank" rel="noopener noreferrer" className="text-teal">
             Open in Daytona ↗
           </a>
-        </div>
-      )}
+        ) : (
+          <span className="text-teal">⚡ Running in browser via Pyodide</span>
+        )}
+      </div>
     </div>
   )
 }
