@@ -50,6 +50,9 @@ print("Authors:", "${paper.authors.slice(0, 3).join(', ')}")`,
           id: 'cell3',
           type: 'code' as const,
           content: `# Try it yourself: explore parameters
+# Uses only Pyodide-compatible packages (numpy, matplotlib, scipy, pandas, scikit-learn)
+import numpy as np
+
 learning_rate = 0.01  # Try: 0.001, 0.1
 hidden_dims = 64      # Try: 32, 128, 256
 sparsity = 0.1        # Try: 0.01, 0.5

@@ -60,7 +60,17 @@ export default function NotebookCell({ cell, workspaceId, onRun }: NotebookCellP
       }
       onRun?.(cell.id)
     } catch (e) {
-      setOutputError(e instanceof Error ? e.message : 'Execution failed')
+      const msg = e instanceof Error ? e.message : 'Execution failed'
+      const isPyodidePackageError =
+        msg.includes("pure Python 3 wheel") ||
+        msg.includes("micropip") ||
+        msg.includes("Can't find") ||
+        msg.includes("No packages found")
+      setOutputError(
+        isPyodidePackageError
+          ? "Some packages aren't available in the browser (Pyodide). Use the Daytona sandbox for full Python environment support."
+          : msg
+      )
     } finally {
       setIsRunning(false)
     }

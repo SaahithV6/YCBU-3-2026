@@ -191,6 +191,10 @@ export async function generateNotebookCells(
 ${githubUrl ? `GitHub repository: ${githubUrl}` : ''}
 Sections: ${sections.map(s => s.title).join(', ')}
 
+IMPORTANT: This notebook runs in Pyodide (Python in the browser). Only use packages that are available in Pyodide:
+- Allowed: numpy, matplotlib, scipy, pandas, scikit-learn, networkx, sympy, statsmodels, seaborn, pillow
+- Do NOT use: torch, tensorflow, obstore, pyarrow, or any package requiring native/C extensions not available in Pyodide
+
 Return JSON array of 5-8 notebook cells including markdown explanations, runnable Python code with numpy/matplotlib, and output cells:
 [
   {"id": "nb-1", "type": "markdown", "content": "# ${title}\\n\\nOverview...", "sectionId": "${sections[0]?.id || 'sec-intro'}", "isEditable": false},
