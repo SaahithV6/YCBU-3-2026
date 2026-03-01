@@ -11,7 +11,10 @@ export const maxDuration = 120
 
 export async function POST(request: NextRequest) {
   try {
-    const { paperId, title, authors, pdfUrl, sourceUrl, sourceName } = await request.json()
+    const body = await request.json()
+    const paperData = body.paper || body
+    const { title, authors, pdfUrl, sourceUrl, sourceName } = paperData
+    const paperId = paperData.paperId || paperData.id
 
     if (!pdfUrl || !title) {
       return NextResponse.json({ error: 'pdfUrl and title are required' }, { status: 400 })
