@@ -1,41 +1,50 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-export const createPaper = mutation({
+export const create = mutation({
   args: {
-    externalId: v.string(),
+    threadId: v.id("threads"),
     title: v.string(),
     authors: v.array(v.string()),
-    abstract: v.string(),
-    url: v.string(),
-    pdfUrl: v.optional(v.string()),
+    pdfUrl: v.string(),
+    sourceUrl: v.string(),
+    sourceName: v.string(),
+    relevanceScore: v.number(),
+    relevanceReason: v.string(),
+    arxivId: v.optional(v.string()),
     venue: v.optional(v.string()),
     year: v.optional(v.number()),
-    relevanceScore: v.optional(v.number()),
-    relevanceExplanation: v.optional(v.string()),
+    doi: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const existing = await ctx.db
-      .query("papers")
-      .withIndex("by_external_id", (q) => q.eq("externalId", args.externalId))
-      .first();
-    if (existing) return existing._id;
-    return await ctx.db.insert("papers", { ...args, processingStatus: "pending" });
+    return await ctx.db.insert("papers", {
+      ...args,
+      status: "queued",
+    });
   },
 });
 
-export const updatePaper = mutation({
+export const get = query({
+  args: { id: v.id("papers") },
+  handler: async (ctx, args) => ctx.db.get(args.id),
+});
+
+export const update = mutation({
   args: {
     id: v.id("papers"),
-    tldr: v.optional(v.array(v.object({ sentence: v.string(), sourceSentence: v.string() }))),
-    readingTime: v.optional(v.number()),
-    sections: v.optional(v.any()),
-    variables: v.optional(v.any()),
-    citations: v.optional(v.any()),
-    evidenceChains: v.optional(v.any()),
-    githubRepos: v.optional(v.any()),
-    notebookId: v.optional(v.id("notebooks")),
-    processingStatus: v.optional(v.string()),
+    status: v.optional(v.union(v.literal("queued"), v.literal("extracting"), v.literal("parsing"), v.literal("ready"), v.literal("error"))),
+    tldr: v.optional(v.array(v.any())),
+    sections: v.optional(v.array(v.any())),
+    variables: v.optional(v.array(v.any())),
+    equations: v.optional(v.array(v.any())),
+    figures: v.optional(v.array(v.any())),
+    citations: v.optional(v.array(v.any())),
+    notationWarnings: v.optional(v.array(v.any())),
+    evidenceChains: v.optional(v.array(v.any())),
+    githubUrl: v.optional(v.string()),
+    notebookCells: v.optional(v.array(v.any())),
+    sandboxId: v.optional(v.string()),
+    readersOnline: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { id, ...fields } = args;
@@ -47,17 +56,17 @@ export const updatePaper = mutation({
   },
 });
 
-export const getPaper = query({
-  args: { id: v.id("papers") },
-  handler: async (ctx, args) => ctx.db.get(args.id),
-});
-
-export const getPaperByExternalId = query({
-  args: { externalId: v.string() },
+export const listByThread = query({
+  args: { threadId: v.id("threads") },
   handler: async (ctx, args) =>
-    ctx.db.query("papers").withIndex("by_external_id", (q) => q.eq("externalId", args.externalId)).first(),
+    ctx.db.query("papers").withIndex("by_thread", q => q.eq("threadId", args.threadId)).collect(),
 });
 
-export const listPapers = query({
-  handler: async (ctx) => ctx.db.query("papers").collect(),
+export const incrementReaders = mutation({
+  args: { id: v.id("papers"), delta: v.number() },
+  handler: async (ctx, args) => {
+    const paper = await ctx.db.get(args.id);
+    if (!paper) return;
+    await ctx.db.patch(args.id, { readersOnline: Math.max(0, (paper.readersOnline || 0) + args.delta) });
+  },
 });

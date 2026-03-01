@@ -2,43 +2,62 @@
 
 import { useState, useCallback } from 'react'
 
-interface DepthActions {
-  hoveredVariable: boolean
-  expandedEquation: boolean
-  ranNotebookCell: boolean
-  clickedCitation: boolean
-  clickedPrerequisite: boolean
+export type InteractionType = 'hoveredVariable' | 'expandedEquation' | 'ranNotebookCell' | 'clickedCitation'
+
+interface DepthState {
+  [paperId: string]: {
+    interactions: Partial<Record<InteractionType, number>>
+    depth: number
+  }
 }
 
-const ACTION_WEIGHTS: Record<keyof DepthActions, number> = {
+const INTERACTION_WEIGHTS: Record<InteractionType, number> = {
   hoveredVariable: 0.05,
   expandedEquation: 0.1,
   ranNotebookCell: 0.2,
   clickedCitation: 0.1,
-  clickedPrerequisite: 0.15,
 }
 
-export function useDepthMeter() {
-  const [depth, setDepth] = useState(0)
-  const [actions, setActions] = useState<Partial<Record<keyof DepthActions, number>>>({})
+function calculateDepth(interactions: Partial<Record<InteractionType, number>>): number {
+  let total = 0
+  for (const [key, count] of Object.entries(interactions)) {
+    const weight = INTERACTION_WEIGHTS[key as InteractionType] || 0
+    total += weight * Math.min(count as number, 3)
+  }
+  return Math.min(total, 1.0)
+}
 
-  const recordAction = useCallback((action: keyof DepthActions) => {
-    setActions(prev => {
-      const count = (prev[action] || 0) + 1
-      const updated = { ...prev, [action]: count }
-      
-      // Calculate total depth (capped at 1.0)
-      let total = 0
-      for (const [key, cnt] of Object.entries(updated)) {
-        const weight = ACTION_WEIGHTS[key as keyof DepthActions]
-        // Diminishing returns after 3 actions of same type
-        total += weight * Math.min(cnt as number, 3)
+export function useDepthMeter(paperId?: string) {
+  const [state, setState] = useState<DepthState>({})
+  const DEFAULT_PAPER_ID = '__default__'
+  const currentPaperId = paperId || DEFAULT_PAPER_ID
+
+  const recordInteraction = useCallback((type: InteractionType, id?: string) => {
+    setState(prev => {
+      const paperState = prev[currentPaperId] || { interactions: {}, depth: 0 }
+      const updated = {
+        ...paperState.interactions,
+        [type]: (paperState.interactions[type] || 0) + 1,
       }
-      setDepth(Math.min(total, 1.0))
-      
-      return updated
+      const depth = calculateDepth(updated)
+      return {
+        ...prev,
+        [currentPaperId]: { interactions: updated, depth },
+      }
     })
-  }, [])
+  }, [currentPaperId])
 
-  return { depth, recordAction }
+  // Legacy compat
+  const recordAction = useCallback((type: string) => {
+    recordInteraction(type as InteractionType)
+  }, [recordInteraction])
+
+  const currentState = state[currentPaperId] || { interactions: {}, depth: 0 }
+  const depth = currentState.depth
+
+  const getDepthPercentage = useCallback(() => {
+    return Math.round(currentState.depth * 100)
+  }, [currentState.depth])
+
+  return { depth, recordAction, recordInteraction, getDepthPercentage }
 }

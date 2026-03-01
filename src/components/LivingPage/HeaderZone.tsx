@@ -26,11 +26,6 @@ export default function HeaderZone({ paper, readingMode, onReadingModeChange }: 
           {paper.year && (
             <span className="text-xs" style={{ color: '#9ca3af' }}>{paper.year}</span>
           )}
-          {paper.readingTime && (
-            <span className="text-xs" style={{ color: '#9ca3af' }}>
-              · {paper.readingTime} min read
-            </span>
-          )}
         </div>
       )}
 
@@ -48,8 +43,8 @@ export default function HeaderZone({ paper, readingMode, onReadingModeChange }: 
         {paper.authors.length > 5 && ` +${paper.authors.length - 5} more`}
       </p>
 
-      {/* Relevance */}
-      {paper.relevanceExplanation && (
+      {/* Relevance reason */}
+      {paper.relevanceReason && (
         <div
           className="mb-4 p-3 rounded-lg text-sm"
           style={{ backgroundColor: '#111827', border: '1px solid #00d4aa22' }}
@@ -57,7 +52,7 @@ export default function HeaderZone({ paper, readingMode, onReadingModeChange }: 
           <span className="text-xs font-display uppercase tracking-wider mr-2" style={{ color: '#00d4aa' }}>
             Why this matters
           </span>
-          <span style={{ color: '#e8e0d0' }}>{paper.relevanceExplanation}</span>
+          <span style={{ color: '#e8e0d0' }}>{paper.relevanceReason}</span>
         </div>
       )}
 
@@ -76,7 +71,7 @@ export default function HeaderZone({ paper, readingMode, onReadingModeChange }: 
                 key={i}
                 className="text-sm cursor-pointer hover:underline"
                 style={{ color: '#e8e0d0', fontFamily: 'IBM Plex Serif, serif' }}
-                title={`Source: "${item.sourceSentence}"`}
+                title={`Source: "${item.sourceSentenceId}"`}
               >
                 {item.sentence}
               </p>
@@ -90,7 +85,7 @@ export default function HeaderZone({ paper, readingMode, onReadingModeChange }: 
         <ReadingModeToggle mode={readingMode} onChange={onReadingModeChange} />
         <div className="flex gap-2">
           <a
-            href={paper.url}
+            href={paper.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs px-3 py-1.5 rounded transition-all"

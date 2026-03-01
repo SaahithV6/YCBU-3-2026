@@ -4,23 +4,22 @@ import { useState } from 'react'
 
 interface NotationWarningProps {
   symbol: string
-  /** Previous definition of the symbol */
-  previousDefinition: string
-  /** New conflicting definition */
-  newDefinition: string
-  /** Section where the redefinition occurs */
-  section: string
+  sectionA: string
+  meaningA: string
+  sectionB: string
+  meaningB: string
 }
 
 /**
- * Displays a warning badge when a variable symbol is redefined
- * with a different meaning across sections.
+ * Displays a warning badge when a variable symbol is used with different
+ * meanings in different sections of the paper.
  */
 export default function NotationWarning({
   symbol,
-  previousDefinition,
-  newDefinition,
-  section,
+  sectionA,
+  meaningA,
+  sectionB,
+  meaningB,
 }: NotationWarningProps) {
   const [open, setOpen] = useState(false)
 
@@ -59,8 +58,7 @@ export default function NotationWarning({
           </div>
 
           <p className="text-xs mb-2" style={{ color: '#9ca3af', fontFamily: 'IBM Plex Serif, serif' }}>
-            <span className="font-mono" style={{ color: '#f5a623' }}>{symbol}</span> is redefined in{' '}
-            <em>{section}</em>.
+            <span className="font-mono" style={{ color: '#f5a623' }}>{symbol}</span> has conflicting meanings across sections.
           </p>
 
           <div className="space-y-1.5">
@@ -69,18 +67,18 @@ export default function NotationWarning({
               style={{ backgroundColor: '#0a0e14', border: '1px solid #1a2235' }}
             >
               <span className="block text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#6b7280' }}>
-                Earlier
+                In {sectionA}
               </span>
-              <span style={{ color: '#e8e0d0', fontFamily: 'IBM Plex Serif, serif' }}>{previousDefinition}</span>
+              <span style={{ color: '#e8e0d0', fontFamily: 'IBM Plex Serif, serif' }}>{meaningA}</span>
             </div>
             <div
               className="text-xs p-2 rounded"
               style={{ backgroundColor: '#0a0e14', border: '1px solid #f5a62333' }}
             >
               <span className="block text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#6b7280' }}>
-                Here
+                In {sectionB}
               </span>
-              <span style={{ color: '#e8e0d0', fontFamily: 'IBM Plex Serif, serif' }}>{newDefinition}</span>
+              <span style={{ color: '#e8e0d0', fontFamily: 'IBM Plex Serif, serif' }}>{meaningB}</span>
             </div>
           </div>
 

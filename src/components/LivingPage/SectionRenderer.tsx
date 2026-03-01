@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Section, Variable, ReadingMode } from '@/lib/types'
+import { Section, Variable, ReadingMode, EvidenceChain as EvidenceChainType } from '@/lib/types'
 import EquationRenderer from './EquationRenderer'
 import FigureViewer from './FigureViewer'
 import DontUnderstandButton from './DontUnderstandButton'
@@ -16,19 +16,12 @@ interface SectionRendererProps {
   readingMode: ReadingMode
   onEquationExpand?: () => void
   onVariableHover?: () => void
-  evidenceChains?: Array<{
-    claim: string
-    experiment: string
-    figure?: string
-    result: string
-    conclusion: string
-  }>
+  evidenceChains?: EvidenceChainType[]
 }
 
 function highlightVariables(text: string, variables: Variable[], onHover?: () => void): React.ReactNode[] {
   if (!variables.length) return [text]
 
-  // Build a map for quick lookup and sort symbols longest-first to avoid partial matches
   const varMap = new Map(variables.map(v => [v.symbol, v]))
   const sortedSymbols = Array.from(varMap.keys()).sort((a, b) => b.length - a.length)
 
@@ -80,8 +73,6 @@ export default function SectionRenderer({
 }: SectionRendererProps) {
   const [activeParagraph, setActiveParagraph] = useState<number | null>(null)
 
-  const paragraphs = section.content.split('\n\n').filter(Boolean)
-
   return (
     <section id={section.id} className="mb-12">
       <ProgressiveReveal>
@@ -93,62 +84,46 @@ export default function SectionRenderer({
         </h2>
       </ProgressiveReveal>
 
-      {section.orientationSentence && (
-        <ProgressiveReveal delay={100}>
-          <p
-            className="text-sm italic mb-4 pb-3"
-            style={{ color: '#00d4aa', borderBottom: '1px solid #1a2235' }}
-          >
-            {section.orientationSentence}
-          </p>
-        </ProgressiveReveal>
-      )}
-
-      {paragraphs.map((paragraph, i) => (
-        <ProgressiveReveal key={i} delay={200 + i * 80}>
-          <div
-            className="relative group mb-4"
-            onMouseEnter={() => setActiveParagraph(i)}
-            onMouseLeave={() => setActiveParagraph(null)}
-          >
-            <p
-              className="text-base leading-relaxed"
-              style={{
-                color: '#e8e0d0',
-                fontFamily: 'IBM Plex Serif, serif',
-                lineHeight: '1.85',
-              }}
+      {section.content.map((block, i) => (
+        <ProgressiveReveal key={block.id} delay={200 + i * 80}>
+          {block.type === 'paragraph' && (
+            <div
+              className="relative group mb-4"
+              onMouseEnter={() => setActiveParagraph(i)}
+              onMouseLeave={() => setActiveParagraph(null)}
             >
-              {highlightVariables(paragraph, variables, onVariableHover)}
-            </p>
-            <div className={`mt-1 transition-opacity duration-200 ${activeParagraph === i ? 'opacity-100' : 'opacity-0'}`}>
-              <DontUnderstandButton paragraph={paragraph} paperTitle={paperTitle} />
+              <p
+                id={block.id}
+                className="text-base leading-relaxed"
+                style={{
+                  color: '#e8e0d0',
+                  fontFamily: 'IBM Plex Serif, serif',
+                  lineHeight: '1.85',
+                }}
+              >
+                {highlightVariables(block.raw, variables, onVariableHover)}
+              </p>
+              <div className={`mt-1 transition-opacity duration-200 ${activeParagraph === i ? 'opacity-100' : 'opacity-0'}`}>
+                <DontUnderstandButton paragraph={block.raw} paperTitle={paperTitle} />
+              </div>
             </div>
-          </div>
+          )}
+          {block.type === 'equation' && readingMode !== 'skim' && (
+            <div
+              id={block.id}
+              className="equation-container p-4 rounded my-4 overflow-x-auto"
+              style={{ backgroundColor: '#0a0e14', border: '1px solid #1a2235' }}
+            >
+              <span dangerouslySetInnerHTML={{ __html: `\\[${block.raw}\\]` }} />
+            </div>
+          )}
+          {block.type === 'figure' && (
+            <div id={block.id} className="my-4 text-sm italic" style={{ color: '#9ca3af' }}>
+              {block.raw}
+            </div>
+          )}
         </ProgressiveReveal>
       ))}
-
-      {/* Equations */}
-      {section.equations && section.equations.length > 0 && readingMode !== 'skim' && (
-        <div>
-          {section.equations.map((eq) => (
-            <ProgressiveReveal key={eq.id} delay={300}>
-              <EquationRenderer equation={eq} onExpand={onEquationExpand} />
-            </ProgressiveReveal>
-          ))}
-        </div>
-      )}
-
-      {/* Figures */}
-      {section.figures && section.figures.length > 0 && (
-        <div>
-          {section.figures.map((fig) => (
-            <ProgressiveReveal key={fig.id} delay={300}>
-              <FigureViewer figure={fig} isActive={readingMode === 'deep-dive'} />
-            </ProgressiveReveal>
-          ))}
-        </div>
-      )}
 
       {/* Evidence chains */}
       {evidenceChains.length > 0 && readingMode === 'deep-dive' && (

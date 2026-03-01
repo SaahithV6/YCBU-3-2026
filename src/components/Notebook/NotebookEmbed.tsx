@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ProcessedPaper } from '@/lib/types'
+import { ProcessedPaper, NotebookCell as NotebookCellType } from '@/lib/types'
 import NotebookCell from './NotebookCell'
 
 interface NotebookEmbedProps {
@@ -12,13 +12,7 @@ interface NotebookEmbedProps {
 }
 
 interface NotebookData {
-  cells: Array<{
-    id: string
-    type: 'markdown' | 'code' | 'output'
-    content: string
-    output?: string
-    language?: string
-  }>
+  cells: NotebookCellType[]
   sandboxUrl?: string
   status: string
 }

@@ -13,8 +13,8 @@ export default function EvidenceChain({ chain }: EvidenceChainProps) {
   const steps = [
     { label: 'Claim', content: chain.claim, color: '#00d4aa' },
     { label: 'Experiment', content: chain.experiment, color: '#9ca3af' },
-    ...(chain.figure ? [{ label: 'Figure', content: chain.figure, color: '#f5a623' }] : []),
-    { label: 'Result', content: chain.result, color: '#e8e0d0' },
+    ...(chain.figureId ? [{ label: 'Figure', content: chain.figureId, color: '#f5a623' }] : []),
+    { label: 'Result', content: chain.statisticalResult, color: '#e8e0d0' },
     { label: 'Conclusion', content: chain.conclusion, color: '#00d4aa' },
   ]
 

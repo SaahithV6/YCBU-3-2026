@@ -54,9 +54,12 @@ function parseArxivXML(xml: string): PaperMetadata[] {
         abstract,
         url: `https://arxiv.org/abs/${arxivId}`,
         pdfUrl: `https://arxiv.org/pdf/${arxivId}`,
+        sourceUrl: `https://arxiv.org/abs/${arxivId}`,
+        sourceName: 'arXiv',
         venue: 'arXiv',
         year,
         relevanceScore,
+        relevanceReason: '',
       })
       index++
     }
